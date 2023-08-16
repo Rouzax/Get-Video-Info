@@ -65,6 +65,3 @@ Filter and copy videos to a specific destination:
 - This script provides a simple way to filter and copy videos, but it might not cover all edge cases.
 
 - Use at your own risk. The author is not responsible for any data loss or damage caused by using this script.
-```
-
-Feel free to modify the README.md file according to your preferences and include any additional information you find relevant.
