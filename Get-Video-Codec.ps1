@@ -81,6 +81,7 @@ function Get-VideoInfo($filePath, $ffprobePath) {
             $format = $ffprobeOutput.format
             $totalBitRate = $format.bit_rate
             $totalBitRateFormatted = Convert-BitRate $totalBitRate
+            $tags = $stream.tags
             $encoder = $tags.encoder
 
             $videoInfo = [PSCustomObject]@{
