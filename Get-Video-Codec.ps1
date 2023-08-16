@@ -81,7 +81,7 @@ function Get-VideoInfo($filePath, $ffprobePath) {
             $format = $ffprobeOutput.format
             $totalBitRate = $format.bit_rate
             $totalBitRateFormatted = Convert-BitRate $totalBitRate
-            $encodingApp = $format.tags.encoder
+            $encoder = $tags.encoder
 
             $videoInfo = [PSCustomObject]@{
                 FileName         = (Get-Item $filePath).Name
@@ -92,7 +92,7 @@ function Get-VideoInfo($filePath, $ffprobePath) {
                 "Video Bit Rate" = $bitRateFormatted
                 "Total Bit Rate" = $totalBitRateFormatted
                 RawBitRate       = [int]$totalBitRate
-                "Enconding App"  = $encodingApp
+                "Encoder"  = $encoder
             }
         }
     }
@@ -163,7 +163,7 @@ if ($ExactHeight) {
 }
 
 $sortedVideoInfo = $videoInfoList | Sort-Object -Property Codec, "Video Width", RawBitRate -Descending
-$sortedVideoInfo | Format-Table -AutoSize FileName, Codec, "Video Width", "Video Height", "Video Bit Rate", "Total Bit Rate", RawBitRate, "Encoding App"
+$sortedVideoInfo | Format-Table -AutoSize FileName, Codec, "Video Width", "Video Height", "Video Bit Rate", "Total Bit Rate", RawBitRate, Encoder
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
