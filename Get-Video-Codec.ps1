@@ -92,7 +92,7 @@ function Get-VideoInfo($filePath, $ffprobePath) {
                 "Video Bit Rate" = $bitRateFormatted
                 "Total Bit Rate" = $totalBitRateFormatted
                 RawBitRate       = [int]$totalBitRate
-                "Encoder"  = $encoder
+                Encoder          = $encoder
             }
         }
     }
