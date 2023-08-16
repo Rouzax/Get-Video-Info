@@ -173,10 +173,10 @@ if ($TargetDestination) {
         # Create the destination directory if it doesn't exist
         $destinationDirectory = [System.IO.Path]::GetDirectoryName($destinationFilePath)
         if (-not (Test-Path $destinationDirectory)) {
-            New-Item -ItemType Directory -Path $destinationDirectory
+            $null = New-Item -ItemType Directory -Path $destinationDirectory
         }
 
         # Copy the file to the destination
-        Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
+        $null = Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
     }
 }
