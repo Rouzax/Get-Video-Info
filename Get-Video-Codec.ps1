@@ -36,6 +36,9 @@ param (
     [int] $ExactHeight,
 
     [Parameter()]
+    [string] $EncoderFilter,
+
+    [Parameter()]
     [string] $TargetDestination
 )
 
@@ -161,6 +164,10 @@ if ($ExactWidth) {
 
 if ($ExactHeight) {
     $videoInfoList = $videoInfoList | Where-Object { $_."Video Height" -eq $ExactHeight }
+}
+
+if ($EncoderFilter) {
+    $videoInfoList = $videoInfoList | Where-Object { $_.Encoder -like "*$EncoderFilter*" }
 }
 
 $sortedVideoInfo = $videoInfoList | Sort-Object -Property Codec, "Video Width", RawBitRate -Descending
