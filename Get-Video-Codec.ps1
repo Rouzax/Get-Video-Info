@@ -175,6 +175,9 @@ $sortedVideoInfo | Format-Table -AutoSize FileName, Codec, "Video Width", "Video
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
+    $totalFiles = $sortedVideoInfo.Count
+    $copiedFiles = 0
+
     foreach ($videoInfo in $sortedVideoInfo) {
         $sourceFilePath = $videoInfo.FullPath
         $relativePath = $sourceFilePath.Substring($FolderPath.Length)
@@ -188,5 +191,9 @@ if ($TargetDestination) {
 
         # Copy the file to the destination
         $null = Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
+
+        $copiedFiles++
+        $progressPercent = ($copiedFiles / $totalFiles) * 100
+        Write-Progress -Activity "Copying Files" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
     }
 }
