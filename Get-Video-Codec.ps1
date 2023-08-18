@@ -16,21 +16,21 @@ param (
 
     [Parameter()]
     [int] $MaxBitrate,
-
+    
     [Parameter()]
     [int] $MinWidth,
-
+    
     [Parameter()]
     [int] $MaxWidth,
+    
+    [Parameter()]
+    [int] $ExactWidth,
 
     [Parameter()]
     [int] $MinHeight,
 
     [Parameter()]
     [int] $MaxHeight,
-
-    [Parameter()]
-    [int] $ExactWidth,
 
     [Parameter()]
     [int] $ExactHeight,
@@ -51,7 +51,22 @@ if (-not (Test-Path $FFprobePath)) {
 
 # Function to convert bitrate to human-readable format with two decimal places
 function Convert-BitRate($bitRate) {
-    if ($bitRate -eq $null) {
+    <#
+    .SYNOPSIS
+    This function converts a given Bitrate value into a human-readable format, including bps, kbps, and Mbps.
+    
+    .DESCRIPTION
+    The Convert-BitRate function takes a Bitrate value as input and converts it into a more readable format. It calculates and rounds the Bitrate to kilobits per second (kbps) and megabits per second (Mbps) as appropriate, and then returns the formatted result with the corresponding unit.
+
+    .PARAMETER bitRate
+    Specifies the Bitrate value that needs to be converted. It should be provided in bits per second (bps).
+
+    .EXAMPLE
+    Example 1:
+    Convert-BitRate -bitRate 2500000
+    This example converts a Bitrate of 2500000 bps into 2.50 Mbps.
+    #>
+    if ($null -eq $bitRate) {
         return ""
     }
 
@@ -69,6 +84,27 @@ function Convert-BitRate($bitRate) {
 
 # Function to extract video information using FFprobe
 function Get-VideoInfo($filePath, $ffprobePath) {
+    <#
+    .SYNOPSIS
+    Retrieves detailed information about a video file using FFprobe.
+
+    .DESCRIPTION
+    This function takes a video file path and the path to the FFprobe executable as inputs.
+    It uses FFprobe to extract information about the video, such as codec, dimensions, bitrate, and encoder.
+
+    .PARAMETER filePath
+    Specifies the path to the video file for which information needs to be extracted.
+
+    .PARAMETER ffprobePath
+    Specifies the path to the FFprobe executable.
+
+    .EXAMPLE
+    Get-VideoInfo -filePath "C:\Videos\video.mp4" -ffprobePath "C:\Program Files\FFmpeg\ffprobe.exe"
+    This example retrieves information about the video file "video.mp4" using FFprobe.
+
+    .NOTES
+    This function requires FFprobe to be installed on the system and the ffprobePath parameter to point to its location.
+    #>
     $ffprobeOutput = & $ffprobePath -v error -print_format json -show_format -show_streams "$filePath" | ConvertFrom-Json
 
     $videoInfo = $null
@@ -88,15 +124,15 @@ function Get-VideoInfo($filePath, $ffprobePath) {
             $encoder = $tags.encoder
 
             $videoInfo = [PSCustomObject]@{
-                FileName         = (Get-Item $filePath).Name
-                FullPath         = $filePath
-                Codec            = $codec
-                "Video Width"    = [int]$videoWidth
-                "Video Height"   = [int]$videoHeight
-                "Video Bit Rate" = $bitRateFormatted
-                "Total Bit Rate" = $totalBitRateFormatted
-                RawBitRate       = [int]$totalBitRate
-                Encoder          = $encoder
+                FileName        = (Get-Item $filePath).Name
+                FullPath        = $filePath
+                Codec           = $codec
+                "Video Width"   = [int]$videoWidth
+                "Video Height"  = [int]$videoHeight
+                "Video Bitrate" = $bitRateFormatted
+                "Total Bitrate" = $totalBitRateFormatted
+                RawBitRate      = [int]$totalBitRate
+                Encoder         = $encoder
             }
         }
     }
@@ -106,6 +142,28 @@ function Get-VideoInfo($filePath, $ffprobePath) {
 
 # Recursive function to search for video files and extract information
 function Get-VideosRecursively($folderPath, $ffprobePath) {
+    <#
+    .SYNOPSIS
+    Recursively searches for video files in a folder and its subfolders and extracts information using FFprobe.
+
+    .DESCRIPTION
+    This function searches for video files (with extensions mp4, mkv, avi, mov, wmv) in the specified folder
+    and its subfolders. For each video file found, it calls the Get-VideoInfo function to extract detailed information.
+
+    .PARAMETER folderPath
+    Specifies the path of the folder to start the search from.
+
+    .PARAMETER ffprobePath
+    Specifies the path to the FFprobe executable.
+
+    .EXAMPLE
+    Get-VideosRecursively -folderPath "C:\Videos" -ffprobePath "C:\Program Files\FFmpeg\ffprobe.exe"
+    This example searches for video files in the "C:\Videos" folder and its subfolders and extracts information using FFprobe.
+
+    .NOTES
+    This function requires the Get-VideoInfo function and FFprobe to be installed on the system.
+    #>
+
     $videoFiles = Get-ChildItem -Path $folderPath -File | Where-Object { $_.Extension -match '\.(mp4|mkv|avi|mov|wmv)$' }
 
     $allVideoInfo = @()
@@ -130,48 +188,22 @@ function Get-VideosRecursively($folderPath, $ffprobePath) {
 # Start searching for video files and extracting information
 $videoInfoList = Get-VideosRecursively $FolderPath $FFprobePath
 
-if ($CodecFilter) {
-    $videoInfoList = $videoInfoList | Where-Object { $_.Codec -eq $CodecFilter }
-}
-
-if ($MinBitrate) {
-    $videoInfoList = $videoInfoList | Where-Object { $_.RawBitRate -ge $MinBitrate }
-}
-
-if ($MaxBitrate) {
-    $videoInfoList = $videoInfoList | Where-Object { $_.RawBitRate -le $MaxBitrate }
-}
-
-if ($MinWidth) {
-    $videoInfoList = $videoInfoList | Where-Object { $_."Video Width" -ge $MinWidth }
-}
-
-if ($MaxWidth) {
-    $videoInfoList = $videoInfoList | Where-Object { $_."Video Width" -le $MaxWidth }
-}
-
-if ($MinHeight) {
-    $videoInfoList = $videoInfoList | Where-Object { $_."Video Height" -ge $MinHeight }
-}
-
-if ($MaxHeight) {
-    $videoInfoList = $videoInfoList | Where-Object { $_."Video Height" -le $MaxHeight }
-}
-
-if ($ExactWidth) {
-    $videoInfoList = $videoInfoList | Where-Object { $_."Video Width" -eq $ExactWidth }
-}
-
-if ($ExactHeight) {
-    $videoInfoList = $videoInfoList | Where-Object { $_."Video Height" -eq $ExactHeight }
-}
-
-if ($EncoderFilter) {
-    $videoInfoList = $videoInfoList | Where-Object { $_.Encoder -like "*$EncoderFilter*" }
+# Filter based on provided criteria
+$videoInfoList = $videoInfoList | Where-Object {
+    (!$CodecFilter -or $_.Codec -eq $CodecFilter) -and
+    (!$MinBitrate -or $_.RawBitRate -ge $MinBitrate) -and
+    (!$MaxBitrate -or $_.RawBitRate -le $MaxBitrate) -and
+    (!$MinWidth -or $_."Video Width" -ge $MinWidth) -and
+    (!$MaxWidth -or $_."Video Width" -le $MaxWidth) -and
+    (!$MinHeight -or $_."Video Height" -ge $MinHeight) -and
+    (!$MaxHeight -or $_."Video Height" -le $MaxHeight) -and
+    (!$ExactWidth -or $_."Video Width" -eq $ExactWidth) -and
+    (!$ExactHeight -or $_."Video Height" -eq $ExactHeight) -and
+    (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*")
 }
 
 $sortedVideoInfo = $videoInfoList | Sort-Object -Property Codec, "Video Width", RawBitRate -Descending
-$sortedVideoInfo | Format-Table -AutoSize FileName, Codec, "Video Width", "Video Height", "Video Bit Rate", "Total Bit Rate", RawBitRate, Encoder
+$sortedVideoInfo | Format-Table -AutoSize FileName, Codec, "Video Width", "Video Height", "Video Bitrate", "Total Bitrate", RawBitRate, Encoder
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
@@ -184,16 +216,18 @@ if ($TargetDestination) {
         $destinationFilePath = Join-Path $TargetDestination $relativePath
 
         # Create the destination directory if it doesn't exist
-        $destinationDirectory = [System.IO.Path]::GetDirectoryName($destinationFilePath)
+        $destinationDirectory = Split-Path -Path $destinationFilePath -Parent
         if (-not (Test-Path $destinationDirectory)) {
             $null = New-Item -ItemType Directory -Path $destinationDirectory
         }
+        
+        # Write Progress
+        $progressPercent = ($copiedFiles / $totalFiles) * 100
+        Write-Progress -Activity "Copying Files" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
 
         # Copy the file to the destination
         $null = Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
 
         $copiedFiles++
-        $progressPercent = ($copiedFiles / $totalFiles) * 100
-        Write-Progress -Activity "Copying Files" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
     }
 }
