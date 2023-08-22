@@ -1,15 +1,73 @@
+<#
+.SYNOPSIS
+This script extracts information about video files using MediaInfo CLI, filters the results based on specified criteria,
+and optionally copies the files to a target destination.
+
+.DESCRIPTION
+This script searches for video files in a specified folder and its subfolders, extracts detailed information about them
+using MediaInfo CLI, and applies various filters based on user-defined criteria such as format, bitrate, resolution, etc.
+It also provides the option to copy the filtered files to a target destination.
+
+.PARAMETER FolderPath
+Specifies the path to the root folder containing video files.
+
+.PARAMETER MediaInfocliPath
+Specifies the path to the MediaInfo CLI executable. Default: "C:\Program Files\MediaInfo_CLI\MediaInfo.exe".
+
+.PARAMETER Recursive
+If specified, the script will search for video files recursively in subfolders.
+
+.PARAMETER FormatFilter
+Specifies the desired video format to filter by.
+
+.PARAMETER MinBitrate
+Specifies the minimum video bitrate (bps) to filter by.
+
+.PARAMETER MaxBitrate
+Specifies the maximum video bitrate (bps) to filter by.
+
+.PARAMETER MinWidth
+Specifies the minimum video width (pixels) to filter by.
+
+.PARAMETER MaxWidth
+Specifies the maximum video width (pixels) to filter by.
+
+.PARAMETER ExactWidth
+Specifies the exact video width (pixels) to filter by.
+
+.PARAMETER MinHeight
+Specifies the minimum video height (pixels) to filter by.
+
+.PARAMETER MaxHeight
+Specifies the maximum video height (pixels) to filter by.
+
+.PARAMETER ExactHeight
+Specifies the exact video height (pixels) to filter by.
+
+.PARAMETER EncoderFilter
+Specifies a keyword to filter video encoders.
+
+.PARAMETER TargetDestination
+Specifies the target destination to copy the filtered video files.
+
+.EXAMPLE
+.\ProcessVideos.ps1 -FolderPath "C:\Videos" -FormatFilter "mp4" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
+
+This example searches for MP4 video files in the "C:\Videos" folder and its subfolders, with a minimum bitrate of 1 Mbps.
+The filtered videos are then copied to the "D:\FilteredVideos" directory.
+#>
 param (
     [Parameter(Mandatory = $true, Position = 0)]
     [string] $FolderPath,
 
     [Parameter(Position = 1)]
-    [string] $FFprobePath = "C:\Program Files\FFmpeg\ffprobe.exe",
+    [string] $MediaInfocliPath = "C:\Program Files\MediaInfo_CLI\MediaInfo.exe",
 
     [Parameter()]
     [switch] $Recursive,
 
     [Parameter()]
-    [string] $CodecFilter,
+    [string] $FormatFilter,
 
     [Parameter()]
     [int] $MinBitrate,
@@ -42,10 +100,10 @@ param (
     [string] $TargetDestination
 )
 
-# Check if ffprobe executable exists
-if (-not (Test-Path $FFprobePath)) {
-    Write-Host "Error: FFprobe executable not found at the specified path: $FFprobePath"
-    Write-Host "Please provide the correct path to the FFprobe executable using the -FFprobePath parameter."
+# Check if MediaInfo executable exists
+if (-not (Test-Path $MediaInfocliPath)) {
+    Write-Host "Error: MediaInfo CLI executable not found at the specified path: $MediaInfocliPath"
+    Write-Host "Please provide the correct path to the MediaInfo CLI executable using the -MediaInfocliPath parameter."
     Exit
 }
 
@@ -82,69 +140,90 @@ function Convert-BitRate($bitRate) {
     }
 }
 
-# Function to extract video information using FFprobe
-function Get-VideoInfo($filePath, $ffprobePath) {
+# Function to extract video information using MediaInfo CLI
+function Get-VideoInfo($filePath, $MediaInfocliPath) {
     <#
     .SYNOPSIS
-    Retrieves detailed information about a video file using FFprobe.
+    Retrieves detailed information about a video file using MediaInfo CLI.
 
     .DESCRIPTION
-    This function takes a video file path and the path to the FFprobe executable as inputs.
-    It uses FFprobe to extract information about the video, such as codec, dimensions, bitrate, and encoder.
+    This function takes a video file path and the path to the MediaInfo CLI executable as inputs.
+    It uses MediaInfo to extract information about the video, such as Format, dimensions, bitrate, and encoder.
 
     .PARAMETER filePath
     Specifies the path to the video file for which information needs to be extracted.
 
-    .PARAMETER ffprobePath
-    Specifies the path to the FFprobe executable.
+    .PARAMETER MediaInfocliPath
+    Specifies the path to the MediaInfo executable.
 
     .EXAMPLE
-    Get-VideoInfo -filePath "C:\Videos\video.mp4" -ffprobePath "C:\Program Files\FFmpeg\ffprobe.exe"
-    This example retrieves information about the video file "video.mp4" using FFprobe.
+    Get-VideoInfo -filePath "C:\Videos\video.mp4" -MediaInfocliPath "C:\Program Files\FFmpeg\MediaInfo.exe"
+    This example retrieves information about the video file "video.mp4" using MediaInfo.
 
     .NOTES
-    This function requires FFprobe to be installed on the system and the ffprobePath parameter to point to its location.
+    This function requires MediaInfo to be installed on the system and the MediaInfocliPath parameter to point to its location.
     #>
-    $ffprobeOutput = & $ffprobePath -v error -print_format json -show_format -show_streams "$filePath" | ConvertFrom-Json
+    $MediaInfoOutput = & $MediaInfocliPath --output=JSON --Full "$filePath" | ConvertFrom-Json
 
-    $videoInfo = $null
+    $singleVideoInfo = $null
 
-    foreach ($stream in $ffprobeOutput.streams) {
-        if ($stream.codec_type -eq "video") {
-            $codec = $stream.codec_name
-            $videoWidth = $stream.width
-            $videoHeight = $stream.height
-            $bitRate = $stream.bit_rate
-            $bitRateFormatted = Convert-BitRate $bitRate
-
-            $format = $ffprobeOutput.format
-            $totalBitRate = $format.bit_rate
-            $totalBitRateFormatted = Convert-BitRate $totalBitRate
-            $tags = $format.tags
-            $encoder = $tags.encoder
-
-            $videoInfo = [PSCustomObject]@{
-                FileName        = (Get-Item $filePath).Name
-                FullPath        = $filePath
-                Codec           = $codec
-                "Video Width"   = [int]$videoWidth
-                "Video Height"  = [int]$videoHeight
-                "Video Bitrate" = $bitRateFormatted
-                "Total Bitrate" = $totalBitRateFormatted
-                RawBitRate      = [int]$totalBitRate
-                Encoder         = $encoder
-            }
-        }
+    $generalTrack = $MediaInfoOutput.media.track | Where-Object { $_.'@type' -eq 'General' }
+    $videoTrack = $MediaInfoOutput.media.track | Where-Object { $_.'@type' -eq 'Video' }
+    
+    $format = $videoTrack.Format_String
+    $codec = $videoTrack.CodecID
+    $videoWidth = if ($videoTrack.Width) {
+        [int]$videoTrack.Width 
+    } else {
+        $null 
     }
+    $videoHeight = if ($videoTrack.Height) {
+        [int]$videoTrack.Height 
+    } else {
+        $null 
+    }
+    
+    if ($videoTrack.BitRate) {
+        $rawVideoBitRate = [int]$videoTrack.BitRate
+        $videoBitRate = Convert-BitRate $rawVideoBitRate
+    } else {
+        $videoBitRate = $null
+    }
+    
+    if ($generalTrack.OverallBitRate) {
+        $rawTotalBitRate = [int]$generalTrack.OverallBitRate
+        $totalBitRate = Convert-BitRate $rawTotalBitRate
+    } else {
+        $totalBitRate = $null
+    }
+    $encodedApplication = $generalTrack.Encoded_Application_String
+    
+    # Extracting and rounding the duration
+    $rawDuration = [decimal]$videoTrack.Duration
+    $videoDuration = [math]::Floor($rawDuration)
 
-    return $videoInfo
+    $singleVideoInfo = [PSCustomObject]@{
+        FileName        = (Get-Item $filePath).BaseName
+        FullPath        = $filePath
+        Format          = $format
+        Codec           = $codec
+        VideoWidth      = $videoWidth
+        VideoHeight     = $videoHeight
+        VideoBitrate    = $videoBitRate
+        TotalBitrate    = $totalBitRate
+        VideoDuration   = $VideoDuration   
+        Encoder         = $encodedApplication
+        RawVideoBitrate = $rawVideoBitRate   
+        RawTotalBitrate = $rawTotalBitRate  
+    }
+    return $singleVideoInfo
 }
 
 # Recursive function to search for video files and extract information
-function Get-VideosRecursively($folderPath, $ffprobePath) {
+function Get-VideosRecursively($folderPath, $MediaInfocliPath) {
     <#
     .SYNOPSIS
-    Recursively searches for video files in a folder and its subfolders and extracts information using FFprobe.
+    Recursively searches for video files in a folder and its subfolders and extracts information using MediaInfo.
 
     .DESCRIPTION
     This function searches for video files (with extensions mp4, mkv, avi, mov, wmv) in the specified folder
@@ -153,22 +232,22 @@ function Get-VideosRecursively($folderPath, $ffprobePath) {
     .PARAMETER folderPath
     Specifies the path of the folder to start the search from.
 
-    .PARAMETER ffprobePath
-    Specifies the path to the FFprobe executable.
+    .PARAMETER MediaInfocliPath
+    Specifies the path to the MediaInfo executable.
 
     .EXAMPLE
-    Get-VideosRecursively -folderPath "C:\Videos" -ffprobePath "C:\Program Files\FFmpeg\ffprobe.exe"
-    This example searches for video files in the "C:\Videos" folder and its subfolders and extracts information using FFprobe.
+    Get-VideosRecursively -folderPath "C:\Videos" -MediaInfocliPath "C:\Program Files\FFmpeg\MediaInfo.exe"
+    This example searches for video files in the "C:\Videos" folder and its subfolders and extracts information using MediaInfo.
 
     .NOTES
-    This function requires the Get-VideoInfo function and FFprobe to be installed on the system.
+    This function requires the Get-VideoInfo function and MediaInfo to be installed on the system.
     #>
 
     $videoFiles = Get-ChildItem -Path $folderPath -File | Where-Object { $_.Extension -match '\.(mp4|mkv|avi|mov|wmv)$' }
 
     $allVideoInfo = @()
     foreach ($file in $videoFiles) {
-        $videoInfo = Get-VideoInfo $file.FullName $ffprobePath
+        $videoInfo = Get-VideoInfo $file.FullName $MediaInfocliPath
         if ($videoInfo) {
             $allVideoInfo += $videoInfo
         }
@@ -177,7 +256,7 @@ function Get-VideosRecursively($folderPath, $ffprobePath) {
     if ($Recursive) {
         $subfolders = Get-ChildItem -Path $folderPath -Directory
         foreach ($subfolder in $subfolders) {
-            $subVideoInfo = Get-VideosRecursively $subfolder.FullName $ffprobePath
+            $subVideoInfo = Get-VideosRecursively $subfolder.FullName $MediaInfocliPath
             $allVideoInfo += $subVideoInfo
         }
     }
@@ -186,24 +265,25 @@ function Get-VideosRecursively($folderPath, $ffprobePath) {
 }
 
 # Start searching for video files and extracting information
-$videoInfoList = Get-VideosRecursively $FolderPath $FFprobePath
+$videoInfoList = Get-VideosRecursively $FolderPath $MediaInfocliPath
 
 # Filter based on provided criteria
 $videoInfoList = $videoInfoList | Where-Object {
-    (!$CodecFilter -or $_.Codec -eq $CodecFilter) -and
-    (!$MinBitrate -or $_.RawBitRate -ge $MinBitrate) -and
-    (!$MaxBitrate -or $_.RawBitRate -le $MaxBitrate) -and
-    (!$MinWidth -or $_."Video Width" -ge $MinWidth) -and
-    (!$MaxWidth -or $_."Video Width" -le $MaxWidth) -and
-    (!$MinHeight -or $_."Video Height" -ge $MinHeight) -and
-    (!$MaxHeight -or $_."Video Height" -le $MaxHeight) -and
-    (!$ExactWidth -or $_."Video Width" -eq $ExactWidth) -and
-    (!$ExactHeight -or $_."Video Height" -eq $ExactHeight) -and
+    (!$FormatFilter -or $_.Format -eq $FormatFilter) -and
+    (!$MinBitrate -or $_.RawTotalBitrate -ge $MinBitrate) -and
+    (!$MaxBitrate -or $_.RawTotalBitrate -le $MaxBitrate) -and
+    (!$MinWidth -or $_.VideoWidth -ge $MinWidth) -and
+    (!$MaxWidth -or $_.VideoWidth -le $MaxWidth) -and
+    (!$MinHeight -or $_.VideoHeight -ge $MinHeight) -and
+    (!$MaxHeight -or $_.VideoHeight -le $MaxHeight) -and
+    (!$ExactWidth -or $_.VideoWidth -eq $ExactWidth) -and
+    (!$ExactHeight -or $_.VideoHeight -eq $ExactHeight) -and
     (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*")
 }
 
-$sortedVideoInfo = $videoInfoList | Sort-Object -Property Codec, "Video Width", RawBitRate -Descending
-$sortedVideoInfo | Format-Table -AutoSize FileName, Codec, "Video Width", "Video Height", "Video Bitrate", "Total Bitrate", RawBitRate, Encoder
+$sortedVideoInfo = @()
+$sortedVideoInfo += $videoInfoList | Sort-Object -Property Format, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
+$sortedVideoInfo | Format-Table -AutoSize FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, Encoder
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
@@ -229,5 +309,9 @@ if ($TargetDestination) {
         $null = Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
 
         $copiedFiles++
+
+        # Write Progress
+        $progressPercent = ($copiedFiles / $totalFiles) * 100
+        Write-Progress -Activity "Copying Files" -Status "Copied $sourceFilePath" -PercentComplete $progressPercent
     }
 }
