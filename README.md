@@ -1,12 +1,12 @@
 markdown
 # Video Information Filter and Copy Script
 
-This PowerShell script allows you to filter and copy video files based on various criteria. It uses FFprobe to extract video information and then filters the files based on codec, bit rate, dimensions, and more.
+This PowerShell script allows you to filter and copy video files based on various criteria. It uses MediaInfo CLI to extract video information and then filters the files based on codec, bit rate, dimensions, and more.
 
 ## Prerequisites
 
 - PowerShell
-- FFprobe executable (part of FFmpeg) - Ensure that FFprobe is installed and accessible through the provided path or update the path to the FFprobe executable.
+- MediaInfo CLI executable (https://mediaarea.net/en/MediaInfo) - Ensure that MediaInfo CLI is installed and accessible through the provided path or update the path to the MediaInfo CLI executable.
 
 ## Usage
 
@@ -26,7 +26,7 @@ Replace `<FolderPath>` with the path to the root folder containing your video fi
 
 ### Options
 
-- `-FFprobePath` (Optional): Path to the FFprobe executable. Defaults to "C:\Program Files\FFmpeg\ffprobe.exe".
+- `-MediaInfocliPath` (Optional): Path to the MediaInfo CLI executable. Defaults to "C:\Program Files\FFmpeg\MediaInfo CLI.exe".
 
 - `-Recursive` (Optional): Include this switch to enable recursive search through subdirectories.
 
@@ -58,7 +58,7 @@ Filter and copy videos to a specific destination:
 
 ## Note
 
-- Make sure FFprobe is correctly installed and the provided path is accurate.
+- Make sure MediaInfo CLI is correctly installed and the provided path is accurate.
 
 - Always review and test the script on a small subset of files before using it on a large collection.
 
