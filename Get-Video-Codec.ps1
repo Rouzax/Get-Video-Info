@@ -47,6 +47,9 @@ Specifies the exact video height (pixels) to filter by.
 .PARAMETER EncoderFilter
 Specifies a keyword to filter video encoders.
 
+.PARAMETER FileNameFilter
+Specifies a keyword to filter file name.
+
 .PARAMETER TargetDestination
 Specifies the target destination to copy the filtered video files.
 
@@ -95,6 +98,9 @@ param (
 
     [Parameter()]
     [string] $EncoderFilter,
+
+    [Parameter()]
+    [string] $FileNameFilter,
 
     [Parameter()]
     [string] $TargetDestination
@@ -278,7 +284,8 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$MaxHeight -or $_.VideoHeight -le $MaxHeight) -and
     (!$ExactWidth -or $_.VideoWidth -eq $ExactWidth) -and
     (!$ExactHeight -or $_.VideoHeight -eq $ExactHeight) -and
-    (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*")
+    (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*") -and
+    (!$FileNameFilter -or $_.FileName -like "*$FileNameFilter*")
 }
 
 $sortedVideoInfo = @()
