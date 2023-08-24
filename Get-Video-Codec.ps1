@@ -53,6 +53,9 @@ Specifies a keyword to filter file name.
 .PARAMETER TargetDestination
 Specifies the target destination to copy the filtered video files.
 
+.PARAMETER CopyRelatedFiles
+If provided will tell the script to copy jpg and png images with the same File BaseName as the video to the target
+
 .EXAMPLE
 .\ProcessVideos.ps1 -FolderPath "C:\Videos" -FormatFilter "mp4" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
 
@@ -103,7 +106,10 @@ param (
     [string] $FileNameFilter,
 
     [Parameter()]
-    [string] $TargetDestination
+    [string] $TargetDestination,
+    
+    [Parameter()]
+    [switch] $CopyRelatedFiles
 )
 
 # Check if MediaInfo executable exists
@@ -299,7 +305,7 @@ if ($TargetDestination) {
 
     foreach ($videoInfo in $sortedVideoInfo) {
         $sourceFilePath = $videoInfo.FullPath
-        $relativePath = $sourceFilePath.Substring($FolderPath.Length)
+        $relativePath = $videoInfo.FullPath.Substring($FolderPath.Length)
         $destinationFilePath = Join-Path $TargetDestination $relativePath
 
         # Create the destination directory if it doesn't exist
@@ -315,6 +321,27 @@ if ($TargetDestination) {
         # Copy the file to the destination
         $null = Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
 
+        if ($CopyRelatedFiles) {
+            # Check for other files with different extensions but the same BaseName
+            $otherExtensions = @("jpg", "png")  # Add more extensions as needed
+            $videoFolder = Split-Path -Path $sourceFilePath -Parent
+            foreach ($ext in $otherExtensions) {
+                $otherFilePath = Join-Path $videoFolder "$($videoInfo.FileName).$ext"
+                if (Test-Path $otherFilePath) {
+                    $otherRelativePath = $otherFilePath.Substring($FolderPath.Length)
+                    $otherDestinationFilePath = Join-Path $TargetDestination $otherRelativePath
+                
+                    # Create the destination directory if it doesn't exist
+                    $otherDestinationDirectory = Split-Path -Path $otherDestinationFilePath -Parent
+                    if (-not (Test-Path $otherDestinationDirectory)) {
+                        $null = New-Item -ItemType Directory -Path $otherDestinationDirectory
+                    }
+                
+                    $null = Copy-Item -Path $otherFilePath -Destination $otherDestinationFilePath -Force
+                }
+            }
+        }
+        
         $copiedFiles++
 
         # Write Progress
