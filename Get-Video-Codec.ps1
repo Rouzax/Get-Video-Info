@@ -101,6 +101,9 @@ param (
 
     [Parameter()]
     [string] $EncoderFilter,
+ 
+    [Parameter()]
+    [string] $EncoderNotFilter,
 
     [Parameter()]
     [string] $FileNameFilter,
@@ -291,6 +294,7 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$ExactWidth -or $_.VideoWidth -eq $ExactWidth) -and
     (!$ExactHeight -or $_.VideoHeight -eq $ExactHeight) -and
     (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*") -and
+    (!$EncoderNotFilter -or $_.Encoder -notlike "*$EncoderNotFilter*") -and
     (!$FileNameFilter -or $_.FileName -like "*$FileNameFilter*")
 }
 
