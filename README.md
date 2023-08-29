@@ -33,7 +33,7 @@ Replace `<FolderPath>` with the path to the root folder containing your video fi
 - `-EncoderNotFilter` (Optional): Specifies a keyword to filter video encoders that do not contain.
 - `-FileNameFilter` (Optional): Specifies a keyword to filter video name that contain.
 - `-TargetDestination` (Optional): Specify the target destination folder to copy the filtered videos. Videos will be copied while maintaining the folder structure.
-- `-CopyRelatedFiles' (Optional) : If provided will tell the script to copy jpg and png images with the same File BaseName as the video to the target
+- `-CopyRelatedFiles` (Optional) : If provided will tell the script to copy jpg and png images with the same File BaseName as the video to the target
 
 ## Examples
 
