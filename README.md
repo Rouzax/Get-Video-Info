@@ -11,11 +11,8 @@ This PowerShell script allows you to filter and copy video files based on variou
 ## Usage
 
 1. Clone or download this repository to your local machine.
-
 2. Open a PowerShell terminal.
-
 3. Navigate to the directory containing the script using the `cd` command.
-
 4. Run the script using the following command:
 
 ```powershell
@@ -55,9 +52,6 @@ Filter and copy videos to a specific destination:
 ## Note
 
 - Make sure MediaInfo CLI is correctly installed and the provided path is accurate.
-
 - Always review and test the script on a small subset of files before using it on a large collection.
-
 - This script provides a simple way to filter and copy videos, but it might not cover all edge cases.
-
 - Use at your own risk. The author is not responsible for any data loss or damage caused by using this script.
