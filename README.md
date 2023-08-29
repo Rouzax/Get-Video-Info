@@ -27,20 +27,16 @@ Replace `<FolderPath>` with the path to the root folder containing your video fi
 ### Options
 
 - `-MediaInfocliPath` (Optional): Path to the MediaInfo CLI executable. Defaults to "C:\Program Files\FFmpeg\MediaInfo CLI.exe".
-
 - `-Recursive` (Optional): Include this switch to enable recursive search through subdirectories.
-
 - `-CodecFilter` (Optional): Filter videos by codec name.
-
 - `-MinBitrate` and `-MaxBitrate` (Optional): Filter videos by minimum and maximum bit rate.
-
 - `-MinWidth`, `-MaxWidth`, `-MinHeight`, `-MaxHeight` (Optional): Filter videos by dimensions.
-
 - `-ExactWidth` and `-ExactHeight` (Optional): Filter videos by exact dimensions.
-
-- `-EncoderFilter` (Optional): Filter videos by encoder value.
-
+- `-EncoderFilter` (Optional): Specifies a keyword to filter video encoders that contain.
+- `-EncoderNotFilter` (Optional): Specifies a keyword to filter video encoders that do not contain.
+- `-FileNameFilter` (Optional): Specifies a keyword to filter video name that contain.
 - `-TargetDestination` (Optional): Specify the target destination folder to copy the filtered videos. Videos will be copied while maintaining the folder structure.
+- `-CopyRelatedFiles' (Optional) : If provided will tell the script to copy jpg and png images with the same File BaseName as the video to the target
 
 ## Examples
 
