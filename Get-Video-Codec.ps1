@@ -278,12 +278,12 @@ function Get-VideosRecursively($folderPath, $MediaInfocliPath) {
     $allVideoInfo = @()
     foreach ($file in $videoFiles) {
         $progressPercent = ($FilesScanned / $totalFilesToScan) * 100
-        $FilesScanned++
-        Write-Progress -Activity "Processing: $FilesScanned of $totalFilesToScan" -Status "Reading media info: $file" -PercentComplete $progressPercent
+        Write-Progress -Activity "Processing: $($FilesScanned + 1) of $totalFilesToScan" -Status "Reading media info: $file" -PercentComplete $progressPercent
         $videoInfo = Get-VideoInfo $file.FullName $MediaInfocliPath
         if ($videoInfo) {
             $allVideoInfo += $videoInfo
         }
+        $FilesScanned++
         $progressPercent = ($FilesScanned / $totalFilesToScan) * 100
         Write-Progress -Activity "Processing: $FilesScanned of $totalFilesToScan" -Status "Reading media info: $file" -PercentComplete $progressPercent
     }
