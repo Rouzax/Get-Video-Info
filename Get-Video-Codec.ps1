@@ -26,6 +26,12 @@ Specifies the minimum video bitrate (bps) to filter by.
 .PARAMETER MaxBitrate
 Specifies the maximum video bitrate (bps) to filter by.
 
+.PARAMETER MinFileSize
+Specifies the minimum file size (bytes) to filter by.
+
+.PARAMETER MaxFileSize
+Specifies the maximum file size (bytes) to filter by.
+
 .PARAMETER MinWidth
 Specifies the minimum video width (pixels) to filter by.
 
@@ -80,6 +86,12 @@ param (
 
     [Parameter()]
     [int] $MaxBitrate,
+ 
+    [Parameter()]
+    [int] $MinFileSize,
+
+    [Parameter()]
+    [int] $MaxFileSize,
     
     [Parameter()]
     [int] $MinWidth,
@@ -222,11 +234,11 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
     # Rounding video duration
     $videoDuration = [math]::Floor($rawDuration)
 
-    $parentFolder = (Get-Item -LiteralPath $filePath).Directory.FullName
-    
+    $FileInfo = Get-Item -LiteralPath $filePath
+
     $singleVideoInfo = [PSCustomObject]@{
-        ParentFolder    = $parentFolder
-        FileName        = (Get-Item -LiteralPath $filePath).BaseName
+        ParentFolder    = $FileInfo.Directory.FullName
+        FileName        = $FileInfo.BaseName
         FullPath        = $filePath
         Format          = $format
         Codec           = $codec
@@ -234,12 +246,65 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
         VideoHeight     = $videoHeight
         VideoBitrate    = $videoBitRate
         TotalBitrate    = $totalBitRate
+        FileSize        = $(Format-Size -SizeInBytes $FileInfo.Length)
+        FileSizeByte    = $FileInfo.Length
         VideoDuration   = $VideoDuration   
         Encoder         = $encodedApplication
         RawVideoBitrate = $rawVideoBitRate   
         RawTotalBitrate = $rawTotalBitRate  
     }
     return $singleVideoInfo
+}
+
+function Format-Size() {
+    <#
+    .SYNOPSIS
+    Takes bytes and converts it to KB.MB,GB,TB,PB
+    
+    .DESCRIPTION
+    Takes bytes and converts it to KB.MB,GB,TB,PB
+    
+    .PARAMETER SizeInBytes
+    Input bytes
+    
+    .EXAMPLE
+    Format-Size -SizeInBytes 864132
+    843,88 KB
+    	
+    Format-Size -SizeInBytes 8641320
+    8,24 MB
+    
+    .NOTES
+    General notes
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(
+            Mandatory = $true, 
+            ValueFromPipeline = $true
+        )]
+        [double]$SizeInBytes
+    )
+    switch ([math]::Max($SizeInBytes, 0)) {
+        { $_ -ge 1PB } {
+            '{0:N2} PB' -f ($SizeInBytes / 1PB); break
+        }
+        { $_ -ge 1TB } {
+            '{0:N2} TB' -f ($SizeInBytes / 1TB); break
+        }
+        { $_ -ge 1GB } {
+            '{0:N2} GB' -f ($SizeInBytes / 1GB); break
+        }
+        { $_ -ge 1MB } {
+            '{0:N2} MB' -f ($SizeInBytes / 1MB); break
+        }
+        { $_ -ge 1KB } {
+            '{0:N2} KB' -f ($SizeInBytes / 1KB); break
+        }
+        default {
+            "$SizeInBytes Bytes"
+        }
+    }
 }
 
 # Recursive function to search for video files and extract information
@@ -290,6 +355,9 @@ function Get-VideosRecursively($folderPath, $MediaInfocliPath) {
     return $allVideoInfo
 }
 
+#* Start of script
+Clear-Host
+
 # Start searching for video files and extracting information
 $videoInfoList = Get-VideosRecursively $FolderPath $MediaInfocliPath
 
@@ -303,6 +371,12 @@ $filterDescription += if ($MinBitrate) {
 }
 $filterDescription += if ($MaxBitrate) {
     "MaxBitrate=$MaxBitrate, " 
+}
+$filterDescription += if ($MinFileSize) {
+    "MinFileSize=$MinFileSize, " 
+}
+$filterDescription += if ($MaxFileSize) {
+    "MaxFileSize=$MaxFileSize, " 
 }
 $filterDescription += if ($MinWidth) {
     "MinWidth=$MinWidth, " 
@@ -335,6 +409,8 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$FormatFilter -or $_.Format -eq $FormatFilter) -and
     (!$MinBitrate -or $_.RawTotalBitrate -ge $MinBitrate) -and
     (!$MaxBitrate -or $_.RawTotalBitrate -le $MaxBitrate) -and
+    (!$MinFileSize -or $_.FileSizeByte -ge $MinFileSize) -and
+    (!$MaxFileSize -or $_.FileSizeByte -le $MaxFileSize) -and
     (!$MinWidth -or $_.VideoWidth -ge $MinWidth) -and
     (!$MaxWidth -or $_.VideoWidth -le $MaxWidth) -and
     (!$MinHeight -or $_.VideoHeight -ge $MinHeight) -and
@@ -348,7 +424,7 @@ $videoInfoList = $videoInfoList | Where-Object {
 
 $sortedVideoInfo = @()
 $sortedVideoInfo += $videoInfoList | Sort-Object -Property Format, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
-$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, Encoder | Out-GridView -Title "Video information $filterDescription"
+$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, Encoder | Out-GridView -Title "Video information $filterDescription"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
