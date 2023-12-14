@@ -305,56 +305,62 @@ $videoInfoList = $videoInfoList | Where-Object {
 
 $sortedVideoInfo = @()
 $sortedVideoInfo += $videoInfoList | Sort-Object -Property Format, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
-$sortedVideoInfo | Format-Table -AutoSize FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, Encoder
+$sortedVideoInfo | Select-Object -Property FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, Encoder | Out-GridView -Title "Video information"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
-    $totalFiles = $sortedVideoInfo.Count
-    $copiedFiles = 0
+    $response = Read-Host "Do you want to start the copy of the videos listed? (Y/N)"
 
-    foreach ($videoInfo in $sortedVideoInfo) {
-        $sourceFilePath = $videoInfo.FullPath
-        $relativePath = $videoInfo.FullPath.Substring($FolderPath.Length)
-        $destinationFilePath = Join-Path $TargetDestination $relativePath
+    if ($response -eq 'Y' -or $response -eq 'y') {
+        $totalFiles = $sortedVideoInfo.Count
+        $copiedFiles = 0
 
-        # Create the destination directory if it doesn't exist
-        $destinationDirectory = Split-Path -Path $destinationFilePath -Parent
-        if (-not (Test-Path $destinationDirectory)) {
-            $null = New-Item -ItemType Directory -Path $destinationDirectory
-        }
+        foreach ($videoInfo in $sortedVideoInfo) {
+            $sourceFilePath = $videoInfo.FullPath
+            $relativePath = $videoInfo.FullPath.Substring($FolderPath.Length)
+            $destinationFilePath = Join-Path $TargetDestination $relativePath
+
+            # Create the destination directory if it doesn't exist
+            $destinationDirectory = Split-Path -Path $destinationFilePath -Parent
+            if (-not (Test-Path $destinationDirectory)) {
+                $null = New-Item -ItemType Directory -Path $destinationDirectory
+            }
         
-        # Write Progress
-        $progressPercent = ($copiedFiles / $totalFiles) * 100
-        Write-Progress -Activity "Copying Files" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
+            # Write Progress
+            $progressPercent = ($copiedFiles / $totalFiles) * 100
+            Write-Progress -Activity "Copying Files" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
 
-        # Copy the file to the destination
-        $null = Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
+            # Copy the file to the destination
+            $null = Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
 
-        if ($CopyRelatedFiles) {
-            # Check for other files with different extensions but the same BaseName
-            $otherExtensions = @("jpg", "png")  # Add more extensions as needed
-            $videoFolder = Split-Path -Path $sourceFilePath -Parent
-            foreach ($ext in $otherExtensions) {
-                $otherFilePath = Join-Path $videoFolder "$($videoInfo.FileName).$ext"
-                if (Test-Path $otherFilePath) {
-                    $otherRelativePath = $otherFilePath.Substring($FolderPath.Length)
-                    $otherDestinationFilePath = Join-Path $TargetDestination $otherRelativePath
+            if ($CopyRelatedFiles) {
+                # Check for other files with different extensions but the same BaseName
+                $otherExtensions = @("jpg", "png")  # Add more extensions as needed
+                $videoFolder = Split-Path -Path $sourceFilePath -Parent
+                foreach ($ext in $otherExtensions) {
+                    $otherFilePath = Join-Path $videoFolder "$($videoInfo.FileName).$ext"
+                    if (Test-Path $otherFilePath) {
+                        $otherRelativePath = $otherFilePath.Substring($FolderPath.Length)
+                        $otherDestinationFilePath = Join-Path $TargetDestination $otherRelativePath
                 
-                    # Create the destination directory if it doesn't exist
-                    $otherDestinationDirectory = Split-Path -Path $otherDestinationFilePath -Parent
-                    if (-not (Test-Path $otherDestinationDirectory)) {
-                        $null = New-Item -ItemType Directory -Path $otherDestinationDirectory
+                        # Create the destination directory if it doesn't exist
+                        $otherDestinationDirectory = Split-Path -Path $otherDestinationFilePath -Parent
+                        if (-not (Test-Path $otherDestinationDirectory)) {
+                            $null = New-Item -ItemType Directory -Path $otherDestinationDirectory
+                        }
+                
+                        $null = Copy-Item -Path $otherFilePath -Destination $otherDestinationFilePath -Force
                     }
-                
-                    $null = Copy-Item -Path $otherFilePath -Destination $otherDestinationFilePath -Force
                 }
             }
-        }
         
-        $copiedFiles++
+            $copiedFiles++
 
-        # Write Progress
-        $progressPercent = ($copiedFiles / $totalFiles) * 100
-        Write-Progress -Activity "Copying Files" -Status "Copied $sourceFilePath" -PercentComplete $progressPercent
+            # Write Progress
+            $progressPercent = ($copiedFiles / $totalFiles) * 100
+            Write-Progress -Activity "Copying Files" -Status "Copied $sourceFilePath" -PercentComplete $progressPercent
+        }
+    } elseif ($response -eq 'N' -or $response -eq 'n') {
+        Write-Host "Run script again with different criteria"
     }
 }
