@@ -222,7 +222,7 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
     # Rounding video duration
     $videoDuration = [math]::Floor($rawDuration)
 
-    $parentFolder = (Get-Item -LiteralPath $filePath).Directory.Parent.FullName
+    $parentFolder = (Get-Item -LiteralPath $filePath).Directory.FullName
     
     $singleVideoInfo = [PSCustomObject]@{
         ParentFolder    = $parentFolder
