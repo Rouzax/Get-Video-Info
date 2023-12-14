@@ -222,7 +222,10 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
     # Rounding video duration
     $videoDuration = [math]::Floor($rawDuration)
 
+    $parentFolder = (Get-Item -LiteralPath $filePath).Directory.Parent.FullName
+    
     $singleVideoInfo = [PSCustomObject]@{
+        ParentFolder    = $parentFolder
         FileName        = (Get-Item -LiteralPath $filePath).BaseName
         FullPath        = $filePath
         Format          = $format
@@ -289,17 +292,39 @@ $videoInfoList = Get-VideosRecursively $FolderPath $MediaInfocliPath
 
 # Create filter description based on applied criteria
 $filterDescription = "Filter: "
-$filterDescription += if ($FormatFilter) { "FormatFilter=$FormatFilter, " }
-$filterDescription += if ($MinBitrate) { "MinBitrate=$MinBitrate, " }
-$filterDescription += if ($MaxBitrate) { "MaxBitrate=$MaxBitrate, " }
-$filterDescription += if ($MinWidth) { "MinWidth=$MinWidth, " }
-$filterDescription += if ($MaxWidth) { "MaxWidth=$MaxWidth, " }
-$filterDescription += if ($ExactWidth) { "ExactWidth=$ExactWidth, " }
-$filterDescription += if ($MinHeight) { "MinHeight=$MinHeight, " }
-$filterDescription += if ($MaxHeight) { "MaxHeight=$MaxHeight, " }
-$filterDescription += if ($ExactHeight) { "ExactHeight=$ExactHeight, " }
-$filterDescription += if ($EncoderFilter) { "EncoderFilter=$EncoderFilter, " }
-$filterDescription += if ($FileNameFilter) { "FileNameFilter=$FileNameFilter, " }
+$filterDescription += if ($FormatFilter) {
+    "FormatFilter=$FormatFilter, " 
+}
+$filterDescription += if ($MinBitrate) {
+    "MinBitrate=$MinBitrate, " 
+}
+$filterDescription += if ($MaxBitrate) {
+    "MaxBitrate=$MaxBitrate, " 
+}
+$filterDescription += if ($MinWidth) {
+    "MinWidth=$MinWidth, " 
+}
+$filterDescription += if ($MaxWidth) {
+    "MaxWidth=$MaxWidth, " 
+}
+$filterDescription += if ($ExactWidth) {
+    "ExactWidth=$ExactWidth, " 
+}
+$filterDescription += if ($MinHeight) {
+    "MinHeight=$MinHeight, " 
+}
+$filterDescription += if ($MaxHeight) {
+    "MaxHeight=$MaxHeight, " 
+}
+$filterDescription += if ($ExactHeight) {
+    "ExactHeight=$ExactHeight, " 
+}
+$filterDescription += if ($EncoderFilter) {
+    "EncoderFilter=$EncoderFilter, " 
+}
+$filterDescription += if ($FileNameFilter) {
+    "FileNameFilter=$FileNameFilter, " 
+}
 $filterDescription = $filterDescription.TrimEnd(", ")
 
 # Filter based on provided criteria
@@ -320,7 +345,7 @@ $videoInfoList = $videoInfoList | Where-Object {
 
 $sortedVideoInfo = @()
 $sortedVideoInfo += $videoInfoList | Sort-Object -Property Format, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
-$sortedVideoInfo | Select-Object -Property FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, Encoder | Out-GridView -Title "Video information $filterDescription"
+$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, Encoder | Out-GridView -Title "Video information $filterDescription"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
