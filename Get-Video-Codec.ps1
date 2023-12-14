@@ -213,12 +213,17 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
     }
     $encodedApplication = $generalTrack.Encoded_Application_String
     
-    # Extracting and rounding the duration
-    $rawDuration = [decimal]$videoTrack.Duration
+    if ($videoTrack.Duration) {
+        # Extracting the duration
+        $rawDuration = [decimal]$videoTrack.Duration
+    } else {
+        $rawDuration = [decimal]$generalTrack.Duration
+    }
+    # Rounding video duration
     $videoDuration = [math]::Floor($rawDuration)
 
     $singleVideoInfo = [PSCustomObject]@{
-        FileName        = (Get-Item $filePath).BaseName
+        FileName        = (Get-Item -LiteralPath $filePath).BaseName
         FullPath        = $filePath
         Format          = $format
         Codec           = $codec
