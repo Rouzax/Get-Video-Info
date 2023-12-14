@@ -265,25 +265,26 @@ function Get-VideosRecursively($folderPath, $MediaInfocliPath) {
     .NOTES
     This function requires the Get-VideoInfo function and MediaInfo to be installed on the system.
     #>
+    $videoFiles = @()
+    if ($Recursive) {
+        $videoFiles = Get-ChildItem -Recurse -Path $folderPath -File | Where-Object { $_.Extension -match '\.(mp4|mkv|avi|mov|wmv)$' }
+    } else {
+        $videoFiles = Get-ChildItem -Path $folderPath -File | Where-Object { $_.Extension -match '\.(mp4|mkv|avi|mov|wmv)$' }
+    }
 
-    $videoFiles = Get-ChildItem -Path $folderPath -File | Where-Object { $_.Extension -match '\.(mp4|mkv|avi|mov|wmv)$' }
+    $totalFilesToScan = ($videoFiles).Count
+    $FilesScanned = 0
 
     $allVideoInfo = @()
     foreach ($file in $videoFiles) {
+        $FilesScanned++
+        $progressPercent = ($FilesScanned / $totalFilesToScan) * 100
+        Write-Progress -Activity "scanning Files" -Status "scanning $file - Processing: $FilesScanned out of: $totalFilesToScan" -PercentComplete $progressPercent
         $videoInfo = Get-VideoInfo $file.FullName $MediaInfocliPath
         if ($videoInfo) {
             $allVideoInfo += $videoInfo
         }
     }
-
-    if ($Recursive) {
-        $subfolders = Get-ChildItem -Path $folderPath -Directory
-        foreach ($subfolder in $subfolders) {
-            $subVideoInfo = Get-VideosRecursively $subfolder.FullName $MediaInfocliPath
-            $allVideoInfo += $subVideoInfo
-        }
-    }
-
     return $allVideoInfo
 }
 
