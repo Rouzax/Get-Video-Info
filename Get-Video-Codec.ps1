@@ -208,76 +208,76 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
 
     # Loop through each audio stream and extract language
     foreach ($stream in $MediaInfoOutput.media.track) {
-        if ($stream.StreamKind -eq "Audio" -and $null -ne $stream.Language)
-        $languages += $stream.Language.ToUpper()
+        if ($stream.StreamKind -eq "Audio" -and $null -ne $stream.Language) {
+            $languages += $stream.Language.ToUpper()
+        }
     }
-}
 
-# Join the languages into a string or keep it empty if no languages found
-if ($languages.Count -gt 0) {
-    $audioLanguages = $languages -join ' | '
-} else {
-    $audioLanguages = ""
-}
+    # Join the languages into a string or keep it empty if no languages found
+    if ($languages.Count -gt 0) {
+        $audioLanguages = $languages -join ' | '
+    } else {
+        $audioLanguages = ""
+    }
     
-$format = $videoTrack.Format_String
-$codec = $videoTrack.CodecID
-$videoWidth = if ($videoTrack.Width) {
-    [int]$videoTrack.Width 
-} else {
-    $null 
-}
-$videoHeight = if ($videoTrack.Height) {
-    [int]$videoTrack.Height 
-} else {
-    $null 
-}
+    $format = $videoTrack.Format_String
+    $codec = $videoTrack.CodecID
+    $videoWidth = if ($videoTrack.Width) {
+        [int]$videoTrack.Width 
+    } else {
+        $null 
+    }
+    $videoHeight = if ($videoTrack.Height) {
+        [int]$videoTrack.Height 
+    } else {
+        $null 
+    }
     
-if ($videoTrack.BitRate) {
-    $rawVideoBitRate = [int]$videoTrack.BitRate
-    $videoBitRate = Convert-BitRate $rawVideoBitRate
-} else {
-    $videoBitRate = $null
-}
+    if ($videoTrack.BitRate) {
+        $rawVideoBitRate = [int]$videoTrack.BitRate
+        $videoBitRate = Convert-BitRate $rawVideoBitRate
+    } else {
+        $videoBitRate = $null
+    }
     
-if ($generalTrack.OverallBitRate) {
-    $rawTotalBitRate = [int]$generalTrack.OverallBitRate
-    $totalBitRate = Convert-BitRate $rawTotalBitRate
-} else {
-    $totalBitRate = $null
-}
-$encodedApplication = $generalTrack.Encoded_Application_String
+    if ($generalTrack.OverallBitRate) {
+        $rawTotalBitRate = [int]$generalTrack.OverallBitRate
+        $totalBitRate = Convert-BitRate $rawTotalBitRate
+    } else {
+        $totalBitRate = $null
+    }
+    $encodedApplication = $generalTrack.Encoded_Application_String
     
-if ($videoTrack.Duration) {
-    # Extracting the duration
-    $rawDuration = [decimal]$videoTrack.Duration
-} else {
-    $rawDuration = [decimal]$generalTrack.Duration
-}
-# Rounding video duration
-$videoDuration = [math]::Floor($rawDuration)
+    if ($videoTrack.Duration) {
+        # Extracting the duration
+        $rawDuration = [decimal]$videoTrack.Duration
+    } else {
+        $rawDuration = [decimal]$generalTrack.Duration
+    }
+    # Rounding video duration
+    $videoDuration = [math]::Floor($rawDuration)
 
-$FileInfo = Get-Item -LiteralPath $filePath
+    $FileInfo = Get-Item -LiteralPath $filePath
 
-$singleVideoInfo = [PSCustomObject]@{
-    ParentFolder    = $FileInfo.Directory.FullName
-    FileName        = $FileInfo.BaseName
-    FullPath        = $filePath
-    Format          = $format
-    Codec           = $codec
-    VideoWidth      = $videoWidth
-    VideoHeight     = $videoHeight
-    VideoBitrate    = $videoBitRate
-    TotalBitrate    = $totalBitRate
-    FileSize        = $(Format-Size -SizeInBytes $FileInfo.Length)
-    AudioLanguages  = $audioLanguages
-    FileSizeByte    = $FileInfo.Length
-    VideoDuration   = $VideoDuration   
-    Encoder         = $encodedApplication
-    RawVideoBitrate = $rawVideoBitRate   
-    RawTotalBitrate = $rawTotalBitRate  
-}
-return $singleVideoInfo
+    $singleVideoInfo = [PSCustomObject]@{
+        ParentFolder    = $FileInfo.Directory.FullName
+        FileName        = $FileInfo.BaseName
+        FullPath        = $filePath
+        Format          = $format
+        Codec           = $codec
+        VideoWidth      = $videoWidth
+        VideoHeight     = $videoHeight
+        VideoBitrate    = $videoBitRate
+        TotalBitrate    = $totalBitRate
+        FileSize        = $(Format-Size -SizeInBytes $FileInfo.Length)
+        AudioLanguages  = $audioLanguages
+        FileSizeByte    = $FileInfo.Length
+        VideoDuration   = $VideoDuration   
+        Encoder         = $encodedApplication
+        RawVideoBitrate = $rawVideoBitRate   
+        RawTotalBitrate = $rawTotalBitRate  
+    }
+    return $singleVideoInfo
 }
 
 function Format-Size() {
