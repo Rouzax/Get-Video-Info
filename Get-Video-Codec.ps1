@@ -478,7 +478,7 @@ if ($TargetDestination) {
         
             # Write Progress
             $progressPercent = ($copiedFiles / $totalFiles) * 100
-            Write-Progress -Activity "Copying Files" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
+            Write-Progress -Activity "Copying Files: $($copiedFiles + 1) of $totalFiles" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
 
             # Copy the file to the destination
             $null = Copy-Item -LiteralPath $sourceFilePath -Destination $destinationFilePath -Force
@@ -508,7 +508,7 @@ if ($TargetDestination) {
 
             # Write Progress
             $progressPercent = ($copiedFiles / $totalFiles) * 100
-            Write-Progress -Activity "Copying Files" -Status "Copied $sourceFilePath" -PercentComplete $progressPercent
+            Write-Progress -Activity "Copying Files: $($copiedFiles) of $totalFiles" -Status "Copying $sourceFilePath" -PercentComplete $progressPercent
         }
     } elseif ($response -eq 'N' -or $response -eq 'n') {
         Write-Host "Run script again with different criteria"
