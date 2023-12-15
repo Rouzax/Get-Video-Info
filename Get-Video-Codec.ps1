@@ -435,7 +435,7 @@ $videoInfoList = $videoInfoList | Where-Object {
 
 $sortedVideoInfo = @()
 $sortedVideoInfo += $videoInfoList | Sort-Object -Property Format, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
-$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, Encoder | Out-GridView -Title "Video information $filterDescription"
+$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, Encoder | Out-GridView -Title "Video information - $filterDescription"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
