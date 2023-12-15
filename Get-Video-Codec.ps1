@@ -1,12 +1,9 @@
 <#
 .SYNOPSIS
-This script extracts information about video files using MediaInfo CLI, filters the results based on specified criteria,
-and optionally copies the files to a target destination.
+Extracts detailed information about video files using MediaInfo CLI, applies user-defined filters based on specified criteria, and optionally copies the files to a target destination.
 
 .DESCRIPTION
-This script searches for video files in a specified folder and its subfolders, extracts detailed information about them
-using MediaInfo CLI, and applies various filters based on user-defined criteria such as format, bitrate, resolution, etc.
-It also provides the option to copy the filtered files to a target destination.
+This script searches a designated folder and its subfolders for video files, utilizing MediaInfo CLI to extract comprehensive details. It enables filtering based on user-defined criteria, including format, bitrate, resolution, etc. Additionally, it offers an option to copy the filtered video files to a specified destination.
 
 .PARAMETER FolderPath
 Specifies the path to the root folder containing video files.
@@ -15,7 +12,7 @@ Specifies the path to the root folder containing video files.
 Specifies the path to the MediaInfo CLI executable. Default: "C:\Program Files\MediaInfo_CLI\MediaInfo.exe".
 
 .PARAMETER Recursive
-If specified, the script will search for video files recursively in subfolders.
+If specified, the script searches for video files recursively in subfolders.
 
 .PARAMETER FormatFilter
 Specifies the desired video format to filter by.
@@ -54,13 +51,13 @@ Specifies the exact video height (pixels) to filter by.
 Specifies a keyword to filter video encoders.
 
 .PARAMETER FileNameFilter
-Specifies a keyword to filter file name.
+Specifies a keyword to filter file names.
 
 .PARAMETER TargetDestination
 Specifies the target destination to copy the filtered video files.
 
 .PARAMETER CopyRelatedFiles
-If provided will tell the script to copy jpg and png images with the same File BaseName as the video to the target
+If provided, instructs the script to copy jpg and png images with the same File BaseName as the video to the target.
 
 .EXAMPLE
 .\ProcessVideos.ps1 -FolderPath "C:\Videos" -FormatFilter "mp4" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
@@ -378,6 +375,31 @@ function Get-VideosRecursively($folderPath, $MediaInfocliPath) {
     }
     return $allVideoInfo
 }
+function AddFilterCriteria($name, $value) {
+    <#
+    .SYNOPSIS
+    Adds a filter criteria to the global criteria list based on the provided name and value.
+
+    .DESCRIPTION
+    This function constructs filter criteria based on user-provided parameters (name and value) and appends them to the global criteria list for filtering video files.
+
+    .PARAMETER name
+    Specifies the name of the filter criteria to be added.
+
+    .PARAMETER value
+    Specifies the value associated with the filter criteria.
+
+    .EXAMPLE
+    AddFilterCriteria -name "FormatFilter" -value "mp4"
+    This example adds a filter criteria "FormatFilter=mp4" to the global criteria list.
+
+    .NOTES
+    This function aids in dynamically constructing filtering criteria for video files based on user-defined parameters.
+    #>
+    if ($value) {
+        $global:criteria += "$name=$value"
+    }
+}
 
 #* Start of script
 Clear-Host
@@ -387,12 +409,6 @@ $videoInfoList = Get-VideosRecursively $FolderPath $MediaInfocliPath
 
 # Create filter description based on applied criteria
 $criteria = @()
-
-function AddFilterCriteria($name, $value) {
-    if ($value) {
-        $global:criteria += "$name=$value"
-    }
-}
 
 AddFilterCriteria "FormatFilter" $FormatFilter
 AddFilterCriteria "MinBitrate" $MinBitrate
@@ -411,7 +427,11 @@ AddFilterCriteria "EncoderFilter" $EncoderFilter
 AddFilterCriteria "EncoderNotFilter" $EncoderNotFilter
 AddFilterCriteria "FileNameFilter" $FileNameFilter
 
-$filterDescription = "Filters: " + ($global:criteria -join ", ")
+if ($criteria -eq $null -or $criteria.Length -eq 0) {
+    $filterDescription = " - No filters applied"
+} else {
+    $filterDescription = " - Filters: " + ($criteria -join ", ")
+}
 
 # Filter based on provided criteria
 $videoInfoList = $videoInfoList | Where-Object {
@@ -435,7 +455,7 @@ $videoInfoList = $videoInfoList | Where-Object {
 
 $sortedVideoInfo = @()
 $sortedVideoInfo += $videoInfoList | Sort-Object -Property Format, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
-$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, Encoder | Out-GridView -Title "Video information - $filterDescription"
+$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, Encoder | Out-GridView -Title "Video information$filterDescription"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
