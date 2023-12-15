@@ -112,6 +112,12 @@ param (
     [int] $ExactHeight,
 
     [Parameter()]
+    [string] $AudioLanguageFilter,
+ 
+    [Parameter()]
+    [string] $AudioLanguageNotFilter,
+
+    [Parameter()]
     [string] $EncoderFilter,
  
     [Parameter()]
@@ -196,6 +202,23 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
 
     $generalTrack = $MediaInfoOutput.media.track | Where-Object { $_.'@type' -eq 'General' }
     $videoTrack = $MediaInfoOutput.media.track | Where-Object { $_.'@type' -eq 'Video' }
+
+    # Array to hold audio languages
+    $languages = @()
+
+    # Loop through each audio stream and extract language
+    foreach ($stream in $MediaInfoOutput.media.track) {
+        if ($stream.StreamKind -eq "Audio") {
+            $languages += $stream.Language.ToUpper()
+        }
+    }
+
+    # Join the languages into a string or keep it empty if no languages found
+    if ($languages.Count -gt 0) {
+        $audioLanguages = $languages -join ' | '
+    } else {
+        $audioLanguages = ""
+    }
     
     $format = $videoTrack.Format_String
     $codec = $videoTrack.CodecID
@@ -247,6 +270,7 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
         VideoBitrate    = $videoBitRate
         TotalBitrate    = $totalBitRate
         FileSize        = $(Format-Size -SizeInBytes $FileInfo.Length)
+        AudioLanguages  = $audioLanguages
         FileSizeByte    = $FileInfo.Length
         VideoDuration   = $VideoDuration   
         Encoder         = $encodedApplication
@@ -362,47 +386,33 @@ Clear-Host
 $videoInfoList = Get-VideosRecursively $FolderPath $MediaInfocliPath
 
 # Create filter description based on applied criteria
-$filterDescription = "Filter: "
-$filterDescription += if ($FormatFilter) {
-    "FormatFilter=$FormatFilter, " 
+$criteria = @()
+
+function AddFilterCriteria($name, $value) {
+    if ($value) {
+        $criteria += "$name=$value"
+    }
 }
-$filterDescription += if ($MinBitrate) {
-    "MinBitrate=$MinBitrate, " 
-}
-$filterDescription += if ($MaxBitrate) {
-    "MaxBitrate=$MaxBitrate, " 
-}
-$filterDescription += if ($MinFileSize) {
-    "MinFileSize=$MinFileSize, " 
-}
-$filterDescription += if ($MaxFileSize) {
-    "MaxFileSize=$MaxFileSize, " 
-}
-$filterDescription += if ($MinWidth) {
-    "MinWidth=$MinWidth, " 
-}
-$filterDescription += if ($MaxWidth) {
-    "MaxWidth=$MaxWidth, " 
-}
-$filterDescription += if ($ExactWidth) {
-    "ExactWidth=$ExactWidth, " 
-}
-$filterDescription += if ($MinHeight) {
-    "MinHeight=$MinHeight, " 
-}
-$filterDescription += if ($MaxHeight) {
-    "MaxHeight=$MaxHeight, " 
-}
-$filterDescription += if ($ExactHeight) {
-    "ExactHeight=$ExactHeight, " 
-}
-$filterDescription += if ($EncoderFilter) {
-    "EncoderFilter=$EncoderFilter, " 
-}
-$filterDescription += if ($FileNameFilter) {
-    "FileNameFilter=$FileNameFilter, " 
-}
-$filterDescription = $filterDescription.TrimEnd(", ")
+
+# Create filter description based on applied criteria
+AddFilterCriteria "FormatFilter" $FormatFilter
+AddFilterCriteria "MinBitrate" $MinBitrate
+AddFilterCriteria "MaxBitrate" $MaxBitrate
+AddFilterCriteria "MinFileSize" $MinFileSize
+AddFilterCriteria "MaxFileSize" $MaxFileSize
+AddFilterCriteria "MinWidth" $MinWidth
+AddFilterCriteria "MaxWidth" $MaxWidth
+AddFilterCriteria "MinHeight" $MinHeight
+AddFilterCriteria "MaxHeight" $MaxHeight
+AddFilterCriteria "ExactWidth" $ExactWidth
+AddFilterCriteria "ExactHeight" $ExactHeight
+AddFilterCriteria "AudioLanguageFilter" $AudioLanguageFilter
+AddFilterCriteria "AudioLanguageNotFilter" $AudioLanguageNotFilter
+AddFilterCriteria "EncoderFilter" $EncoderFilter
+AddFilterCriteria "EncoderNotFilter" $EncoderNotFilter
+AddFilterCriteria "FileNameFilter" $FileNameFilter
+
+$filterDescription = "Filter: " + ($criteria -join ", ")
 
 # Filter based on provided criteria
 $videoInfoList = $videoInfoList | Where-Object {
@@ -417,6 +427,8 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$MaxHeight -or $_.VideoHeight -le $MaxHeight) -and
     (!$ExactWidth -or $_.VideoWidth -eq $ExactWidth) -and
     (!$ExactHeight -or $_.VideoHeight -eq $ExactHeight) -and
+    (!$AudioLanguageFilter -or $_.Languages -like "*$AudioLanguageFilter*") -and
+    (!$AudioLanguageNotFilter -or $_.Languages -notlike "*$AudioLanguageNotFilter*") -and
     (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*") -and
     (!$EncoderNotFilter -or $_.Encoder -notlike "*$EncoderNotFilter*") -and
     (!$FileNameFilter -or $_.FileName -like "*$FileNameFilter*")
@@ -424,7 +436,7 @@ $videoInfoList = $videoInfoList | Where-Object {
 
 $sortedVideoInfo = @()
 $sortedVideoInfo += $videoInfoList | Sort-Object -Property Format, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
-$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, Encoder | Out-GridView -Title "Video information $filterDescription"
+$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Format, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, Encoder | Out-GridView -Title "Video information $filterDescription"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
