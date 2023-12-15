@@ -411,7 +411,7 @@ AddFilterCriteria "EncoderFilter" $EncoderFilter
 AddFilterCriteria "EncoderNotFilter" $EncoderNotFilter
 AddFilterCriteria "FileNameFilter" $FileNameFilter
 
-$filterDescription = "Filters: " + ($criteria -join ", ")
+$filterDescription = "Filters: " + ($global:criteria -join ", ")
 
 # Filter based on provided criteria
 $videoInfoList = $videoInfoList | Where-Object {
