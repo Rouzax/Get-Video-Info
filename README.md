@@ -1,57 +1,51 @@
-markdown
-# Video Information Filter and Copy Script
+# Video File Processing with PowerShell
 
-This PowerShell script allows you to filter and copy video files based on various criteria. It uses MediaInfo CLI to extract video information and then filters the files based on codec, bit rate, dimensions, and more.
+![PowerShell Version](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 
-## Prerequisites
+## Overview
 
-- PowerShell
-- MediaInfo CLI executable (https://mediaarea.net/en/MediaInfo) - Ensure that MediaInfo CLI is installed and accessible through the provided path or update the path to the MediaInfo CLI executable.
+This PowerShell script enables comprehensive extraction and filtering of video file information using MediaInfo CLI. It offers extensive filtering options based on various criteria such as format, bitrate, resolution, and more. Additionally, it provides an option to copy filtered videos to a specified destination.
+
+## Features
+
+- **File Information Extraction:** Utilizes MediaInfo CLI to extract detailed information about video files.
+- **Flexible Filtering:** Allows filtering based on format, bitrate, file size, resolution, audio language, encoder, and file name.
+- **Recursive Search:** Optionally searches subfolders for video files.
+- **Targeted File Copy:** Copies filtered videos to a specified destination folder.
+- **Related Files Copy:** Optionally copies images (jpg, png) with the same base name as the video.
+
+## Parameters
+
+- `FolderPath`: Path to the root folder containing video files.
+- `MediaInfocliPath`: Path to the MediaInfo CLI executable (Default: "C:\Program Files\MediaInfo_CLI\MediaInfo.exe").
+- `Recursive`: Search for video files recursively in subfolders.
+- `FormatFilter`, `MinBitrate`, `MaxBitrate`, `MinFileSize`, `MaxFileSize`: Filtering criteria for format, bitrate, file size.
+- `MinWidth`, `MaxWidth`, `ExactWidth`, `MinHeight`, `MaxHeight`, `ExactHeight`: Criteria for video resolution.
+- `AudioLanguageFilter`, `AudioLanguageNotFilter`, `EncoderFilter`, `EncoderNotFilter`, `FileNameFilter`: Filtering based on audio language, encoder, and file name.
+- `TargetDestination`: Destination folder for copied filtered video files.
+- `CopyRelatedFiles`: Option to copy jpg and png images with the same base name as the video.
 
 ## Usage
 
-1. Clone or download this repository to your local machine.
-2. Open a PowerShell terminal.
-3. Navigate to the directory containing the script using the `cd` command.
-4. Run the script using the following command:
+Example:
 
 ```powershell
-.\Get-Video-Codec.ps1 -FolderPath <FolderPath> [Options]
+.\Get-Video-Codec.ps1 -FolderPath "C:\Videos" -FormatFilter "AVC" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
 ```
 
-Replace `<FolderPath>` with the path to the root folder containing your video files.
+This example searches for AVC video files in the "C:\Videos" folder and its subfolders, with a minimum bitrate of 1 Mbps. Filtered videos are copied to the "D:\FilteredVideos" directory.
 
-### Options
+## Installation and Requirements
 
-- `-MediaInfocliPath` (Optional): Path to the MediaInfo CLI executable. Defaults to "C:\Program Files\FFmpeg\MediaInfo CLI.exe".
-- `-Recursive` (Optional): Include this switch to enable recursive search through subdirectories.
-- `-CodecFilter` (Optional): Filter videos by codec name.
-- `-MinBitrate` and `-MaxBitrate` (Optional): Filter videos by minimum and maximum bit rate.
-- `-MinWidth`, `-MaxWidth`, `-MinHeight`, `-MaxHeight` (Optional): Filter videos by dimensions.
-- `-ExactWidth` and `-ExactHeight` (Optional): Filter videos by exact dimensions.
-- `-EncoderFilter` (Optional): Specifies a keyword to filter video encoders that contain.
-- `-EncoderNotFilter` (Optional): Specifies a keyword to filter video encoders that do not contain.
-- `-FileNameFilter` (Optional): Specifies a keyword to filter video name that contain.
-- `-TargetDestination` (Optional): Specify the target destination folder to copy the filtered videos. Videos will be copied while maintaining the folder structure.
-- `-CopyRelatedFiles` (Optional) : If provided will tell the script to copy jpg and png images with the same File BaseName as the video to the target
+1. Ensure PowerShell version 5.1 or later is installed.
+2. Download and install MediaInfo CLI from [MediaInfo website](https://mediaarea.net/MediaInfo).
+3. Clone or download this script to your local machine.
 
-## Examples
+## Notes
 
-Filter and display video information:
+- Ensure MediaInfo CLI is installed at the specified path or update the `MediaInfocliPath` parameter accordingly.
+- File copying requires appropriate permissions and sufficient disk space in the target destination.
 
-```powershell
-.\Get-Video-Codec.ps1 -FolderPath "C:\Videos" -CodecFilter "h264" -MinWidth 1920 -MaxBitrate 8000000
-```
+## License
 
-Filter and copy videos to a specific destination:
-
-```powershell
-.\Get-Video-Codec.ps1 -FolderPath "C:\Videos" -CodecFilter "h264" -TargetDestination "D:\FilteredVideos"
-```
-
-## Note
-
-- Make sure MediaInfo CLI is correctly installed and the provided path is accurate.
-- Always review and test the script on a small subset of files before using it on a large collection.
-- This script provides a simple way to filter and copy videos, but it might not cover all edge cases.
-- Use at your own risk. The author is not responsible for any data loss or damage caused by using this script.
+This script is licensed under the [MIT License](LICENSE).
