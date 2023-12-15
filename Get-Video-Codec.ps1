@@ -390,11 +390,10 @@ $criteria = @()
 
 function AddFilterCriteria($name, $value) {
     if ($value) {
-        $criteria += "$name=$value"
+        $global:criteria += "$name=$value"
     }
 }
 
-# Create filter description based on applied criteria
 AddFilterCriteria "FormatFilter" $FormatFilter
 AddFilterCriteria "MinBitrate" $MinBitrate
 AddFilterCriteria "MaxBitrate" $MaxBitrate
@@ -412,7 +411,7 @@ AddFilterCriteria "EncoderFilter" $EncoderFilter
 AddFilterCriteria "EncoderNotFilter" $EncoderNotFilter
 AddFilterCriteria "FileNameFilter" $FileNameFilter
 
-$filterDescription = "Filter: " + ($criteria -join ", ")
+$filterDescription = "Filters: " + ($criteria -join ", ")
 
 # Filter based on provided criteria
 $videoInfoList = $videoInfoList | Where-Object {
@@ -427,8 +426,8 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$MaxHeight -or $_.VideoHeight -le $MaxHeight) -and
     (!$ExactWidth -or $_.VideoWidth -eq $ExactWidth) -and
     (!$ExactHeight -or $_.VideoHeight -eq $ExactHeight) -and
-    (!$AudioLanguageFilter -or $_.Languages -like "*$AudioLanguageFilter*") -and
-    (!$AudioLanguageNotFilter -or $_.Languages -notlike "*$AudioLanguageNotFilter*") -and
+    (!$AudioLanguageFilter -or $_.AudioLanguages -like "*$AudioLanguageFilter*") -and
+    (!$AudioLanguageNotFilter -or $_.AudioLanguages -notlike "*$AudioLanguageNotFilter*") -and
     (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*") -and
     (!$EncoderNotFilter -or $_.Encoder -notlike "*$EncoderNotFilter*") -and
     (!$FileNameFilter -or $_.FileName -like "*$FileNameFilter*")
