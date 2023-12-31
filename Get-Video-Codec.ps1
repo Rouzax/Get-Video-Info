@@ -17,6 +17,9 @@ If specified, the script searches for video files recursively in subfolders.
 .PARAMETER FormatFilter
 Specifies the desired video format to filter by.
 
+.PARAMETER FormatNotFilter
+Specifies the desired video format to not filter by.
+
 .PARAMETER MinBitrate
 Specifies the minimum video bitrate (bps) to filter by.
 
@@ -77,6 +80,9 @@ param (
 
     [Parameter()]
     [string] $FormatFilter,
+    
+    [Parameter()]
+    [string] $FormatNotFilter,
 
     [Parameter()]
     [int] $MinBitrate,
@@ -411,6 +417,7 @@ $videoInfoList = Get-VideosRecursively $FolderPath $MediaInfocliPath
 $criteria = @()
 
 AddFilterCriteria "FormatFilter" $FormatFilter
+AddFilterCriteria "FormatNotFilter" $FormatNotFilter
 AddFilterCriteria "MinBitrate" $MinBitrate
 AddFilterCriteria "MaxBitrate" $MaxBitrate
 AddFilterCriteria "MinFileSize" $MinFileSize
@@ -436,6 +443,7 @@ if ($criteria -eq $null -or $criteria.Length -eq 0) {
 # Filter based on provided criteria
 $videoInfoList = $videoInfoList | Where-Object {
     (!$FormatFilter -or $_.Format -eq $FormatFilter) -and
+    (!$FormatNotFilter -or $_.Format -ne $FormatNotFilter) -and
     (!$MinBitrate -or $_.RawTotalBitrate -ge $MinBitrate) -and
     (!$MaxBitrate -or $_.RawTotalBitrate -le $MaxBitrate) -and
     (!$MinFileSize -or $_.FileSizeByte -ge $MinFileSize) -and
