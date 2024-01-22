@@ -4,12 +4,12 @@
 
 ## Overview
 
-This PowerShell script enables comprehensive extraction and filtering of video file information using MediaInfo CLI. It offers extensive filtering options based on various criteria such as format, bitrate, resolution, and more. Additionally, it provides an option to copy filtered videos to a specified destination.
+This PowerShell script enables comprehensive extraction and filtering of video file information using MediaInfo CLI. It offers extensive filtering options based on various criteria such as codec, bitrate, resolution, and more. Additionally, it provides an option to copy filtered videos to a specified destination.
 
 ## Features
 
 - **File Information Extraction:** Utilizes MediaInfo CLI to extract detailed information about video files.
-- **Flexible Filtering:** Allows filtering based on format, bitrate, file size, resolution, audio language, encoder, and file name.
+- **Flexible Filtering:** Allows filtering based on codec, bitrate, file size, resolution, audio language, encoder, and file name.
 - **Recursive Search:** Optionally searches subfolders for video files.
 - **Targeted File Copy:** Copies filtered videos to a specified destination folder.
 - **Related Files Copy:** Optionally copies images (jpg, png) with the same base name as the video.
@@ -19,7 +19,7 @@ This PowerShell script enables comprehensive extraction and filtering of video f
 - `FolderPath`: Path to the root folder containing video files.
 - `MediaInfocliPath`: Path to the MediaInfo CLI executable (Default: "C:\Program Files\MediaInfo_CLI\MediaInfo.exe").
 - `Recursive`: Search for video files recursively in subfolders.
-- `FormatFilter`, `MinBitrate`, `MaxBitrate`, `MinFileSize`, `MaxFileSize`: Filtering criteria for format, bitrate, file size.
+- `CodecFilter`, `MinBitrate`, `MaxBitrate`, `MinFileSize`, `MaxFileSize`: Filtering criteria for codec, bitrate, file size.
 - `MinWidth`, `MaxWidth`, `ExactWidth`, `MinHeight`, `MaxHeight`, `ExactHeight`: Criteria for video resolution.
 - `AudioLanguageFilter`, `AudioLanguageNotFilter`, `EncoderFilter`, `EncoderNotFilter`, `FileNameFilter`: Filtering based on audio language, encoder, and file name.
 - `TargetDestination`: Destination folder for copied filtered video files.
@@ -30,7 +30,7 @@ This PowerShell script enables comprehensive extraction and filtering of video f
 Example:
 
 ```powershell
-.\Get-Video-Codec.ps1 -FolderPath "C:\Videos" -FormatFilter "AVC" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
+.\Get-Video-Codec.ps1 -FolderPath "C:\Videos" -CodecFilter "AVC" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
 ```
 
 This example searches for AVC video files in the "C:\Videos" folder and its subfolders, with a minimum bitrate of 1 Mbps. Filtered videos are copied to the "D:\FilteredVideos" directory.
