@@ -137,36 +137,60 @@ if (-not (Test-Path $MediaInfocliPath)) {
     Exit
 }
 
-# Function to convert bitrate to human-readable format with two decimal places
-function Convert-BitRate($bitRate) {
-    <#
-    .SYNOPSIS
-    This function converts a given Bitrate value into a human-readable format, including bps, kbps, and Mbps.
-    
-    .DESCRIPTION
-    The Convert-BitRate function takes a Bitrate value as input and converts it into a more readable format. It calculates and rounds the Bitrate to kilobits per second (kbps) and megabits per second (Mbps) as appropriate, and then returns the formatted result with the corresponding unit.
+<#
+.SYNOPSIS
+    Converts bitrate from bits per second to a human-readable format.
+.DESCRIPTION
+    This function takes a bitrate value in bits per second and converts it to a
+    more human-readable format. It categorizes the bitrate into Mbps, Kbps, or
+    displays it in bits per second, based on the magnitude of the input value.
+.PARAMETER bitratePerSecond
+    Specifies the bitrate value in bits per second that needs to be converted.
+    This parameter is mandatory and can accept input from the pipeline.
+.INPUTS
+    System.Double. Bitrate values in bits per second.
+.OUTPUTS 
+    System.String. The converted bitrate value along with the appropriate unit
+    (Mbps, Kbps, or b/s).
+.EXAMPLE
+    Convert-BitRate -bitratePerSecond 1500000
+    # Output: '1.50 Mb/s'
+    Description: Converts the bitrate value 1500000 b/s to Mbps.
+.EXAMPLE
+    7500 | Convert-BitRate
+    # Output: '7.50 Kb/s'
+    Description: Converts the piped-in bitrate value 7500 b/s to Kbps.
+.EXAMPLE
+    Convert-BitRate -bitratePerSecond 500
+    # Output: '500 b/s'
+    Description: Displays the bitrate value 500 b/s in bits per second.
+#>
 
-    .PARAMETER bitRate
-    Specifies the Bitrate value that needs to be converted. It should be provided in bits per second (bps).
+function Convert-BitRate {
+    [CmdletBinding()]
+    param (
+        [Parameter(
+            Mandatory = $true, 
+            ValueFromPipeline = $true
+        )]
+        [double]$bitratePerSecond
+    )
 
-    .EXAMPLE
-    Example 1:
-    Convert-BitRate -bitRate 2500000
-    This example converts a Bitrate of 2500000 bps into 2.50 Mbps.
-    #>
-    if ($null -eq $bitRate) {
-        return ""
-    }
-
-    $kbps = [math]::Round($bitRate / 1000, 2)
-    $mbps = [math]::Round($kbps / 1000, 2)
-
-    if ($mbps -ge 1) {
-        return ("{0:N2}" -f $mbps) + " Mbps"
-    } elseif ($kbps -ge 1) {
-        return ("{0:N2}" -f $kbps) + " kbps"
-    } else {
-        return "${bitRate} bps"
+    switch ($bitratePerSecond) {
+        { $_ -ge 1000000 } {
+            # Convert to Mb/s
+            '{0:N2} Mb/s' -f ($bitratePerSecond / 1000000)
+            break
+        }
+        { $_ -ge 1000 } {
+            # Convert to Kb/s
+            '{0:N2} Kb/s' -f ($bitratePerSecond / 1000)
+            break
+        }
+        default {
+            # Display in bits if less than 1 bits/s
+            "$bitratePerSecond b/s"
+        }
     }
 }
 
@@ -232,14 +256,14 @@ function Get-VideoInfo($filePath, $MediaInfocliPath) {
     
     if ($videoTrack.BitRate) {
         $rawVideoBitRate = [int]$videoTrack.BitRate
-        $videoBitRate = Convert-BitRate $rawVideoBitRate
+        $videoBitRate = Convert-BitRate -bitratePerSecond $rawVideoBitRate
     } else {
         $videoBitRate = $null
     }
     
     if ($generalTrack.OverallBitRate) {
         $rawTotalBitRate = [int]$generalTrack.OverallBitRate
-        $totalBitRate = Convert-BitRate $rawTotalBitRate
+        $totalBitRate = Convert-BitRate -bitratePerSecond $rawTotalBitRate
     } else {
         $totalBitRate = $null
     }
