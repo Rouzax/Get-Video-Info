@@ -185,7 +185,7 @@ function Get-VideoInfoRecursively {
     $FilesScanned = 0
 
     $allVideoInfo = @()
-    
+
     foreach ($file in $videoFiles) {
         $singleVideoInfo = $null
         $MediaInfoOutput = $null
@@ -463,7 +463,7 @@ function AddFilterCriteria($name, $value) {
 }
 
 #* Start of script
-# Clear-Host
+Clear-Host
 
 $videoFiles = @()
 
