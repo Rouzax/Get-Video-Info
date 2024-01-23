@@ -1,50 +1,65 @@
 <#
 .SYNOPSIS
-    Extracts detailed information about video files using MediaInfo CLI, applies user-defined filters based on specified criteria, and optionally copies the files to a target destination.
+    Retrieves detailed information about video files in a specified folder, optionally recursively.
 .DESCRIPTION
-    This script searches a designated folder and its subfolders for video files, utilizing MediaInfo CLI to extract comprehensive details. It enables filtering based on user-defined criteria, including codec, bitrate, resolution, etc. Additionally, it offers an option to copy the filtered video files to a specified destination.
-.PARAMETER FolderPath
-    Specifies the path to the root folder containing video files.
-.PARAMETER MediaInfocliPath
-    Specifies the path to the MediaInfo CLI executable. Default: "C:\Program Files\MediaInfo_CLI\MediaInfo.exe".
+    This function scans a folder for video files (mp4, mkv, avi, mov, wmv) and retrieves detailed
+    information using the specified MediaInfo CLI and optionally allows for the filtered video files to be copied somewhere
+.PARAMETER folderPath
+    Specifies the path to the folder containing video files.
+.PARAMETER MediaInfoCliPath
+    Specifies the path to the MediaInfo CLI executable.
 .PARAMETER Recursive
-    If specified, the script searches for video files recursively in subfolders.
-.PARAMETER CodecFilter
-    Specifies the desired video codec to filter by.
-.PARAMETER CodecNotFilter
-    Specifies the desired video codec to not filter by.
+    Switch parameter. If present, the function scans the folder and its subfolders recursively.
+.PARAMETER VideoCodecFilter
+    Specifies the video codec to filter video files.
+.PARAMETER VideoCodecNotFilter
+    Specifies the video codec to exclude from the results.
 .PARAMETER MinBitrate
-    Specifies the minimum video bitrate (bps) to filter by.
+    Specifies the minimum total bitrate for filtering video files.
 .PARAMETER MaxBitrate
-    Specifies the maximum video bitrate (bps) to filter by.
+    Specifies the maximum total bitrate for filtering video files.
 .PARAMETER MinFileSize
-    Specifies the minimum file size (bytes) to filter by.
+    Specifies the minimum file size (in bytes) for filtering video files.
 .PARAMETER MaxFileSize
-    Specifies the maximum file size (bytes) to filter by.
+    Specifies the maximum file size (in bytes) for filtering video files.
 .PARAMETER MinWidth
-    Specifies the minimum video width (pixels) to filter by.
+    Specifies the minimum video width for filtering video files.
 .PARAMETER MaxWidth
-    Specifies the maximum video width (pixels) to filter by.
+    Specifies the maximum video width for filtering video files.
 .PARAMETER ExactWidth
-    Specifies the exact video width (pixels) to filter by.
+    Specifies the exact video width for filtering video files.
 .PARAMETER MinHeight
-    Specifies the minimum video height (pixels) to filter by.
+    Specifies the minimum video height for filtering video files.
 .PARAMETER MaxHeight
-    Specifies the maximum video height (pixels) to filter by.
+    Specifies the maximum video height for filtering video files.
 .PARAMETER ExactHeight
-    Specifies the exact video height (pixels) to filter by.
+    Specifies the exact video height for filtering video files.
+.PARAMETER AudioCodecFilter
+    Specifies the audio codec to filter video files.
+.PARAMETER AudioCodecNotFilter
+    Specifies the audio codec to exclude from the results.
+.PARAMETER AudioLanguageFilter
+    Specifies the audio language to filter video files.
+.PARAMETER AudioLanguageNotFilter
+    Specifies the audio language to exclude from the results.
 .PARAMETER EncoderFilter
-    Specifies a keyword to filter video encoders.
+    Specifies the encoder to filter video files.
+.PARAMETER EncoderNotFilter
+    Specifies the encoder to exclude from the results.
 .PARAMETER FileNameFilter
-    Specifies a keyword to filter file names.
+    Specifies a filter for video file names.
 .PARAMETER TargetDestination
-    Specifies the target destination to copy the filtered video files.
+    Specifies the destination folder for copying filtered video files.
 .PARAMETER CopyRelatedFiles
-    If provided, instructs the script to copy jpg and png images with the same File BaseName as the video to the target.
+    If provided, instructs the script to copy jpg and png images
+    with the same File BaseName as the video to the target.
 .EXAMPLE
-    .\ProcessVideos.ps1 -FolderPath "C:\Videos" -CodecFilter "mp4" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
+    .\Get-Video-Info.ps1 -folderPath "C:\Videos" -MediaInfoCliPath "C:\MediaInfo\MediaInfo.exe"
+.EXAMPLE
+    .\Get-Video-Info.ps1 -FolderPath "C:\Videos" -CodecFilter "AVC" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
 
-    This example searches for MP4 video files in the "C:\Videos" folder and its subfolders, with a minimum bitrate of 1 Mbps.
+    This example searches for AVC video files in the "C:\Videos" folder and its subfolders, 
+    with a minimum bitrate of 1 Mbps. 
     The filtered videos are then copied to the "D:\FilteredVideos" directory.
 #>
 param (
@@ -52,16 +67,16 @@ param (
     [string] $FolderPath,
 
     [Parameter(Mandatory = $false)]
-    [string] $MediaInfocliPath = "C:\Program Files\MediaInfo_CLI\MediaInfo.exe",
+    [string] $MediaInfocliPath,
 
     [Parameter(Mandatory = $false)]
     [switch] $Recursive,
 
     [Parameter(Mandatory = $false)]
-    [string] $CodecFilter,
+    [string] $VideoCodecFilter,
     
     [Parameter(Mandatory = $false)]
-    [string] $CodecNotFilter,
+    [string] $VideoCodecNotFilter,
 
     [Parameter(Mandatory = $false)]
     [int] $MinBitrate,
@@ -94,6 +109,12 @@ param (
     [int] $ExactHeight,
 
     [Parameter(Mandatory = $false)]
+    [string] $AudioCodecFilter,
+    
+    [Parameter(Mandatory = $false)]
+    [string] $AudioCodecNotFilter,
+
+    [Parameter(Mandatory = $false)]
     [string] $AudioLanguageFilter,
  
     [Parameter(Mandatory = $false)]
@@ -115,6 +136,14 @@ param (
     [switch] $CopyRelatedFiles
 )
 
+# Handle no MediaInfocliPath Path given as parameter
+if (-not $PSBoundParameters.ContainsKey('MediaInfocliPath')) {
+    $MediaInfocliPath = (Get-Command MediaInfo.exe -ErrorAction SilentlyContinue).Path 
+    if (-not $MediaInfocliPath) {
+        $MediaInfocliPath = "C:\Program Files\MediaInfo_CLI\MediaInfo.exe"
+    }
+}
+
 # Check if MediaInfo executable exists
 if (-not (Test-Path $MediaInfocliPath)) {
     Write-Host "Error: MediaInfo CLI executable not found at the specified path: $MediaInfocliPath"
@@ -128,8 +157,8 @@ if (-not (Test-Path $MediaInfocliPath)) {
 .DESCRIPTION
     This function scans a folder for video files (mp4, mkv, avi, mov, wmv) and retrieves detailed
     information using the specified MediaInfo CLI.
-.PARAMETER folderPath
-    Specifies the path to the folder containing video files.
+.PARAMETER videoFiles
+    Object that holds all the video files that need to be scanned.
 .PARAMETER MediaInfoCliPath
     Specifies the path to the MediaInfo CLI executable.
 .PARAMETER Recursive
@@ -146,135 +175,132 @@ if (-not (Test-Path $MediaInfocliPath)) {
 function Get-VideoInfoRecursively {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$folderPath,
+        [object]$videoFiles,
 
         [Parameter(Mandatory = $true)]
-        [string]$MediaInfoCliPath,
-        
-        [Parameter(Mandatory = $false)]
-        [switch] $Recursive
+        [string]$MediaInfoCliPath
     )
-    $videoFiles = @()
-
-    if ($Recursive) {
-        $videoFiles = Get-ChildItem -Recurse -Path $folderPath -File | Where-Object { $_.Extension -match '\.(mp4|mkv|avi|mov|wmv)$' }
-    } else {
-        $videoFiles = Get-ChildItem -Path $folderPath -File | Where-Object { $_.Extension -match '\.(mp4|mkv|avi|mov|wmv)$' }
-    }
 
     $totalFilesToScan = ($videoFiles).Count
     $FilesScanned = 0
 
     $allVideoInfo = @()
+    
     foreach ($file in $videoFiles) {
         $singleVideoInfo = $null
         $MediaInfoOutput = $null
 
         $progressPercent = ($FilesScanned / $totalFilesToScan) * 100
         Write-Progress -Activity "Processing: $($FilesScanned + 1) of $totalFilesToScan" -Status "Reading media info: $($file.Name)" -PercentComplete $progressPercent
-        # $videoInfo = Get-VideoInfo -folderPath $file.FullName -MediaInfocliPath $MediaInfoCliPath
         
         try {
-            $MediaInfoOutput = & $MediaInfoCliPath --output=JSON --Full $file.FullName | ConvertFrom-Json
+            $MediaInfoOutput = & $MediaInfoCliPath --output=JSON $file.FullName | ConvertFrom-Json
         } catch {
             Write-Host 'Exception:' $_.Exception.Message -ForegroundColor Red
             Write-Host 'Problem running MediaInfo' -ForegroundColor Red
             exit 1
         }
-    
-        $generalTrack = $MediaInfoOutput.media.track | Where-Object { $_.'@type' -eq 'General' }
-        $videoTrack = $MediaInfoOutput.media.track | Where-Object { $_.'@type' -eq 'Video' }
-        
-        # Array to hold audio languages
+
+        # Array initialization to hold audio languages
+        $audioCodecs = @()
         $audioLanguages = @()
         $audioChannels = @()
-        
-        # Loop through each audio stream
+
         foreach ($stream in $MediaInfoOutput.media.track) {
-            if ($stream.StreamKind -eq "Audio") {
+            # Get information from General stream
+            if ($stream.'@type' -eq 'General') {
+                # Get the total Bitrate
+                if ($stream.OverallBitRate) {
+                    [int]$rawTotalBitRate = $stream.OverallBitRate
+                    $totalBitRate = Convert-BitRate -bitratePerSecond $rawTotalBitRate
+                } else {
+                    $totalBitRate = $null
+                }
+
+                # Get encoding Application
+                [string]$encodedApplication = $stream.Encoded_Application
+            }
+
+            # Get information from Video stream
+            elseif ($stream.'@type' -eq 'Video') {
+                # Get Codec information from Video
+                [string]$videoCodec = $stream.Format
+                
+                # Get Video dimensions
+                [int]$videoWidth = $stream.Width 
+                [int]$videoHeight = $stream.Height 
+                
+                # Get Video Bitrate
+                if ($stream.BitRate) {
+                    [int]$rawVideoBitRate = $stream.BitRate
+                    $videoBitRate = Convert-BitRate -bitratePerSecond $rawVideoBitRate
+                } else {
+                    $videoBitRate = $null
+                }
+            } 
+
+            # Get information from Audio stream
+            elseif ($stream.'@type' -eq 'Audio') {
+                # Keep track of all Audio Codec info
+                if ($null -ne $stream.Format) {
+                    $audioCodecs += $stream.Format
+                } else {
+                    $audioCodecs += "UND"
+                }
+
                 # Keep track of all languages
                 if ($null -ne $stream.Language) {
                     $audioLanguages += $stream.Language.ToUpper()
-                        
+                    
                 } else {
                     $audioLanguages += "UND"
                 }
-    
-                # Keep track of all Audio Channel info (formatted as 2/0/0)
-                if ($null -ne $stream.ChannelPositions_String2) {
-                    $audioChannels += $stream.ChannelPositions_String2
+
+                # Keep track of all Audio Channel info
+                if ($null -ne $stream.Channels) {
+                    $audioChannels += $stream.Channels
                 } else {
                     $audioChannels += "UND"
                 }
-            }
+            } 
+
         }
-        
-        # Join the languages into a string or keep it empty if no languages found
+                
+        # Join the Codecs into a string or keep it empty if no Codecs found
+        if ($audioCodecs.Count -gt 0) {
+            $audioCodecs = $audioCodecs -join ' | '
+        } else {
+            $audioCodecs = ""
+        }
+
+        # Join the Languages into a string or keep it empty if no Languages found
         if ($audioLanguages.Count -gt 0) {
             $audioLanguages = $audioLanguages -join ' | '
         } else {
             $audioLanguages = ""
         }
-    
+
         # Join the Channels into a string or keep it empty if no Channels found
         if ($audioChannels.Count -gt 0) {
             $audioChannels = $audioChannels -join ' | '
         } else {
             $audioChannels = ""
         }
-            
-        $codec = $videoTrack.Format_String
-        $videoWidth = if ($videoTrack.Width) {
-            [int]$videoTrack.Width 
-        } else {
-            $null 
-        }
-        $videoHeight = if ($videoTrack.Height) {
-            [int]$videoTrack.Height 
-        } else {
-            $null 
-        }
-            
-        if ($videoTrack.BitRate) {
-            $rawVideoBitRate = [int]$videoTrack.BitRate
-            $videoBitRate = Convert-BitRate -bitratePerSecond $rawVideoBitRate
-        } else {
-            $videoBitRate = $null
-        }
-            
-        if ($generalTrack.OverallBitRate) {
-            $rawTotalBitRate = [int]$generalTrack.OverallBitRate
-            $totalBitRate = Convert-BitRate -bitratePerSecond $rawTotalBitRate
-        } else {
-            $totalBitRate = $null
-        }
-        $encodedApplication = $generalTrack.Encoded_Application_String
-            
-        if ($videoTrack.Duration) {
-            # Extracting the duration
-            $rawDuration = [decimal]$videoTrack.Duration
-        } else {
-            $rawDuration = [decimal]$generalTrack.Duration
-        }
-        # Rounding video duration
-        $videoDuration = [math]::Floor($rawDuration)
-        
-        $FileInfo = Get-Item -LiteralPath $file.FullName
         
         $singleVideoInfo = [PSCustomObject]@{
-            ParentFolder    = $FileInfo.Directory.FullName
-            FileName        = $FileInfo.BaseName
+            ParentFolder    = $file.Directory.FullName
+            FileName        = $file.BaseName
             FullPath        = $file.FullName
-            Codec           = $codec
+            VideoCodec      = $videoCodec
             VideoWidth      = $videoWidth
             VideoHeight     = $videoHeight
             VideoBitrate    = $videoBitRate
             TotalBitrate    = $totalBitRate
-            FileSize        = $(Format-Size -SizeInBytes $FileInfo.Length)
+            FileSize        = $(Format-Size -SizeInBytes $file.Length)
+            AudioCodecs     = $audioCodecs
             AudioLanguages  = $audioLanguages
             AudioChannels   = $audioChannels
-            FileSizeByte    = $FileInfo.Length
-            VideoDuration   = $VideoDuration   
+            FileSizeByte    = $file.Length
             Encoder         = $encodedApplication
             RawVideoBitrate = $rawVideoBitRate   
             RawTotalBitrate = $rawTotalBitRate  
@@ -283,6 +309,7 @@ function Get-VideoInfoRecursively {
         if ($singleVideoInfo) {
             $allVideoInfo += $singleVideoInfo
         }
+
         $FilesScanned++
         $progressPercent = ($FilesScanned / $totalFilesToScan) * 100
         Write-Progress -Activity "Processing: $FilesScanned of $totalFilesToScan" -Status "Reading media info: $($file.Name)" -PercentComplete $progressPercent
@@ -424,8 +451,8 @@ function Format-Size {
 .PARAMETER value
     Specifies the value associated with the filter criteria.
 .EXAMPLE
-    AddFilterCriteria -name "CodecFilter" -value "mp4"
-    This example adds a filter criteria "CodecFilter=mp4" to the global criteria list.
+    AddFilterCriteria -name "VideoCodecFilter" -value "mp4"
+    This example adds a filter criteria "VideoCodecFilter=mp4" to the global criteria list.
 .NOTES
     This function aids in dynamically constructing filtering criteria for video files based on user-defined parameters.
 #>
@@ -436,17 +463,36 @@ function AddFilterCriteria($name, $value) {
 }
 
 #* Start of script
-Clear-Host
+# Clear-Host
 
-# Start searching for video files and extracting information
-# $videoInfoList = Get-VideosRecursively $FolderPath $MediaInfocliPath
-$videoInfoList = Get-VideoInfoRecursively -folderPath $FolderPath -MediaInfoCliPath $MediaInfocliPath -Recursive
+$videoFiles = @()
+
+$fileExtensions = "mp4", "mkv", "avi", "mov", "wmv"
+$videoFilesParams = @{
+    Recurse = $Recursive
+    Path    = $folderPath
+    File    = $true
+}
+
+$videoFiles = Get-ChildItem @videoFilesParams | Where-Object { $_.Extension -match '\.({0})$' -f ($fileExtensions -join '|') } 
+ 
+# filter out min and max files sizes
+if ($MinFileSize -or $MaxFileSize) {
+    $videoFiles = $videoFiles | Where-Object {
+        (
+                ($_.Length -ge $MinFileSize) -and
+                ($_.Length -le $MaxFileSize)
+        )
+    }
+}
+    
+$videoInfoList = Get-VideoInfoRecursively -videoFiles $videoFiles -MediaInfoCliPath $MediaInfocliPath
 
 # Create filter description based on applied criteria
 $criteria = @()
 
-AddFilterCriteria "CodecFilter" $CodecFilter
-AddFilterCriteria "CodecNotFilter" $CodecNotFilter
+AddFilterCriteria "VideoCodecFilter" $VideoCodecFilter
+AddFilterCriteria "VideoCodecNotFilter" $VideoCodecNotFilter
 AddFilterCriteria "MinBitrate" $MinBitrate
 AddFilterCriteria "MaxBitrate" $MaxBitrate
 AddFilterCriteria "MinFileSize" $MinFileSize
@@ -457,6 +503,8 @@ AddFilterCriteria "MinHeight" $MinHeight
 AddFilterCriteria "MaxHeight" $MaxHeight
 AddFilterCriteria "ExactWidth" $ExactWidth
 AddFilterCriteria "ExactHeight" $ExactHeight
+AddFilterCriteria "AudioCodecFilter" $AudioCodecFilter
+AddFilterCriteria "AudioCodecNotFilter" $AudioCodecNotFilter
 AddFilterCriteria "AudioLanguageFilter" $AudioLanguageFilter
 AddFilterCriteria "AudioLanguageNotFilter" $AudioLanguageNotFilter
 AddFilterCriteria "EncoderFilter" $EncoderFilter
@@ -471,8 +519,8 @@ if ($null -eq $criteria -or $criteria.Length -eq 0) {
 
 # Filter based on provided criteria
 $videoInfoList = $videoInfoList | Where-Object {
-    (!$CodecFilter -or $_.Codec -eq $CodecFilter) -and
-    (!$CodecNotFilter -or $_.Codec -ne $CodecNotFilter) -and
+    (!$VideoCodecFilter -or $_.VideoCodec -eq $VideoCodecFilter) -and
+    (!$VideoCodecNotFilter -or $_.VideoCodec -ne $VideoCodecNotFilter) -and
     (!$MinBitrate -or $_.RawTotalBitrate -ge $MinBitrate) -and
     (!$MaxBitrate -or $_.RawTotalBitrate -le $MaxBitrate) -and
     (!$MinFileSize -or $_.FileSizeByte -ge $MinFileSize) -and
@@ -483,6 +531,8 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$MaxHeight -or $_.VideoHeight -le $MaxHeight) -and
     (!$ExactWidth -or $_.VideoWidth -eq $ExactWidth) -and
     (!$ExactHeight -or $_.VideoHeight -eq $ExactHeight) -and
+    (!$AudioCodecFilter -or $_.AudioCodecs -like "*$AudioCodecFilter*") -and
+    (!$AudioCodecNotFilter -or $_.AudioCodecs -notlike "*$AudioCodecNotFilter*") -and
     (!$AudioLanguageFilter -or $_.AudioLanguages -like "*$AudioLanguageFilter*") -and
     (!$AudioLanguageNotFilter -or $_.AudioLanguages -notlike "*$AudioLanguageNotFilter*") -and
     (!$EncoderFilter -or $_.Encoder -like "*$EncoderFilter*") -and
@@ -490,19 +540,17 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$FileNameFilter -or $_.FileName -like "*$FileNameFilter*")
 }
 
-$sortedVideoInfo = @()
-$sortedVideoInfo += $videoInfoList | Sort-Object -Property Codec, @{Expression = "VideoWidth"; Descending = $true }, @{Expression = "RawTotalBitrate"; Descending = $true }
-$sortedVideoInfo | Select-Object -Property ParentFolder, FileName, Codec, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, AudioChannels, Encoder | Out-GridView -Title "Video information$filterDescription"
+$videoInfoList | Select-Object -Property ParentFolder, FileName, VideoCodec, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, AudioCodecs, AudioChannels, Encoder | Out-GridView -Title "Video information$filterDescription"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
     $response = Read-Host "Do you want to start the copy of the videos listed? (Y/N)"
 
     if ($response -eq 'Y' -or $response -eq 'y') {
-        $totalFiles = $sortedVideoInfo.Count
+        $totalFiles = $videoInfoList.Count
         $copiedFiles = 0
 
-        foreach ($videoInfo in $sortedVideoInfo) {
+        foreach ($videoInfo in $videoInfoList) {
             $sourceFilePath = $videoInfo.FullPath
             $relativePath = $videoInfo.FullPath.Substring($FolderPath.Length)
             $destinationFilePath = Join-Path $TargetDestination $relativePath
