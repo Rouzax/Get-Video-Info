@@ -5,8 +5,7 @@
 ## Overview
 
 This PowerShell script enables comprehensive extraction and filtering of video file information using MediaInfo CLI. It offers extensive filtering options based on various criteria such as codec, bitrate, resolution, and more. Additionally, it provides an option to copy filtered videos to a specified destination.
-![image](https://github.com/Rouzax/Get-Video-Info/assets/4103090/6cd64e68-ee44-4cc2-9dfc-254b0c075355)
-
+![image](https://github.com/Rouzax/Get-Video-Info/assets/4103090/2cb23743-5431-4bc9-a49d-3c69a2a59589)
 
 ## Features
 
