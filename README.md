@@ -31,7 +31,7 @@ This PowerShell script enables comprehensive extraction and filtering of video f
 Example:
 
 ```powershell
-.\Get-Video-Codec.ps1 -FolderPath "C:\Videos" -CodecFilter "AVC" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
+.\Get-Video-Info.ps1 -FolderPath "C:\Videos" -CodecFilter "AVC" -MinBitrate 1000000 -TargetDestination "D:\FilteredVideos"
 ```
 
 This example searches for AVC video files in the "C:\Videos" folder and its subfolders, with a minimum bitrate of 1 Mbps. Filtered videos are copied to the "D:\FilteredVideos" directory.
