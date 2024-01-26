@@ -219,6 +219,17 @@ function Get-VideoInfoRecursively {
 
                 # Get encoding Application
                 [string]$encodedApplication = $stream.Encoded_Application
+
+                # Extracting the duration
+                [decimal]$rawDuration = $stream.Duration
+                # Rounding video duration
+                $videoDuration = [math]::Floor($rawDuration)
+
+                # Get File Container
+                [string]$fileContainer = $stream.Format
+            
+                # Get File Extension
+                [string]$fileExt = $stream.FileExtension
             }
 
             # Get information from Video stream
@@ -236,6 +247,13 @@ function Get-VideoInfoRecursively {
                     $videoBitRate = Convert-BitRate -bitratePerSecond $rawVideoBitRate
                 } else {
                     $videoBitRate = $null
+                }
+
+                # Get Video HDR
+                if ($stream.HDR_Format_Compatibility) {
+                    [string]$videoHDR = $stream.HDR_Format_Compatibility
+                } else {
+                    $videoHDR = "SDR"
                 }
             } 
 
@@ -291,7 +309,10 @@ function Get-VideoInfoRecursively {
             ParentFolder    = $file.Directory.FullName
             FileName        = $file.BaseName
             FullPath        = $file.FullName
+            FileExt         = $fileExt
+            FileContainer   = $fileContainer
             VideoCodec      = $videoCodec
+            VideoHDR        = $videoHDR
             VideoWidth      = $videoWidth
             VideoHeight     = $videoHeight
             VideoBitrate    = $videoBitRate
@@ -301,6 +322,7 @@ function Get-VideoInfoRecursively {
             AudioLanguages  = $audioLanguages
             AudioChannels   = $audioChannels
             FileSizeByte    = $file.Length
+            VideoDuration   = $VideoDuration   
             Encoder         = $encodedApplication
             RawVideoBitrate = $rawVideoBitRate   
             RawTotalBitrate = $rawTotalBitRate  
@@ -467,7 +489,7 @@ Clear-Host
 
 $videoFiles = @()
 
-$fileExtensions = "mp4", "mkv", "avi", "mov", "wmv"
+$fileExtensions = "mp4", "mkv", "avi", "mov", "wmv", "ts", "flv", "webm"
 $videoFilesParams = @{
     Recurse = $Recursive
     Path    = $folderPath
@@ -482,6 +504,15 @@ if ($MinFileSize -or $MaxFileSize) {
         (
                 ($_.Length -ge $MinFileSize) -and
                 ($_.Length -le $MaxFileSize)
+        )
+    }
+}
+
+# filter out file name
+if ($FileNameFilter) {
+    $videoFiles = $videoFiles | Where-Object {
+        (
+                ($_.BaseName -like "*$FileNameFilter*")
         )
     }
 }
@@ -540,7 +571,7 @@ $videoInfoList = $videoInfoList | Where-Object {
     (!$FileNameFilter -or $_.FileName -like "*$FileNameFilter*")
 }
 
-$videoInfoList | Select-Object -Property ParentFolder, FileName, VideoCodec, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, AudioCodecs, AudioChannels, Encoder | Out-GridView -Title "Video information$filterDescription"
+$videoInfoList | Select-Object -Property ParentFolder, FileName, FileExt, FileContainer , VideoCodec, VideoHDR, VideoWidth, VideoHeight, VideoBitrate, TotalBitrate, RawTotalBitrate, FileSize, FileSizeByte, AudioLanguages, AudioCodecs, AudioChannels, Encoder | Out-GridView -Title "Video information$filterDescription"
 
 # Copy files to the target destination if specified
 if ($TargetDestination) {
