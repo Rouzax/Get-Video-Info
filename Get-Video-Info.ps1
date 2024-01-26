@@ -489,7 +489,7 @@ Clear-Host
 
 $videoFiles = @()
 
-$fileExtensions = "mp4", "mkv", "avi", "mov", "wmv", "ts", "flv", "webm"
+$fileExtensions = "mp4", "m4v", "mkv", "avi", "mov", "wmv", "ts", "flv", "webm", "mpeg", "mpg"
 $videoFilesParams = @{
     Recurse = $Recursive
     Path    = $folderPath
