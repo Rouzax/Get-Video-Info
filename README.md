@@ -39,7 +39,7 @@ This example searches for AVC video files in the "C:\Videos" folder and its subf
 ## Installation and Requirements
 
 1. Ensure PowerShell version 5.1 or later is installed.
-2. Download and install MediaInfo CLI from [MediaInfo website](https://mediaarea.net/MediaInfo).
+2. Download and install MediaInfo CLI from [MediaInfo website](https://mediaarea.net/MediaInfo). If not provided it will be downloaded and updated to latest online version
 3. Clone or download this script to your local machine.
 
 ## Notes
